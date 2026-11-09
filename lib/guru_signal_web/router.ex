@@ -18,6 +18,13 @@ defmodule GuruSignalWeb.Router do
     plug(GuruSignalWeb.OwnerAuth)
   end
 
+  scope "/health", GuruSignalWeb do
+    pipe_through(:api)
+
+    get("/live", HealthController, :live)
+    get("/ready", HealthController, :ready)
+  end
+
   scope "/", GuruSignalWeb do
     pipe_through(:browser)
 

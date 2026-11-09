@@ -1,0 +1,79 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  test:
+    name: Format, compile, test, and assets
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    env:
+      MIX_ENV: test
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: disposable-ci-password
+      MONITORING_ENABLED: "false"
+
+    services:
+      postgres:
+        image: postgres:17.11-bookworm
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: disposable-ci-password
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+
+    steps:
+      - name: Check out source
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Set up Elixir and OTP
+        uses: erlef/setup-beam@54075bcc5e249e4758d363f27d099f55d843f124 # v1
+        with:
+          otp-version: "29.1.2"
+          elixir-version: "1.20.5-otp-29"
+          version-type: strict
+
+      - name: Generate an ephemeral test signing key
+        run: |
+          signing_key=$(openssl rand -hex 64)
+          echo "::add-mask::$signing_key"
+          echo "SECRET_KEY_BASE=$signing_key" >> "$GITHUB_ENV"
+
+      - name: Fetch locked dependencies
+        run: mix deps.get --check-locked
+
+      - name: Compile dependencies
+        run: mix deps.compile
+
+      - name: Check formatting
+        run: mix format --check-formatted
+
+      - name: Compile application
+        run: mix compile --warnings-as-errors
+
+      - name: Run tests and migrate the disposable database
+        run: mix test
+
+      - name: Install asset tools
+        run: mix assets.setup
+
+      - name: Build assets
+        run: mix assets.build

@@ -84,6 +84,8 @@ the destination or rejection category. Remove the fixture afterward.
   trust, database TLS, secrets, release configuration, and health checks need
   validation against the actual deployment topology. Dev diagnostic routes are
   intended for local development.
+- [Health endpoints and CI](health-and-ci.md) are implemented; 110 host tests and
+  both HTTP probes pass. The first remote workflow run is pending.
 - Accessibility/browser connection-loss checks, operational Telemetry review,
-  dependency advisory checks, and CI remain separate work. Passing these tests
+  and dependency advisory checks remain separate work. Passing these tests
   does not constitute a complete production readiness review.

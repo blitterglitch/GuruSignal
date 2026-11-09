@@ -147,8 +147,9 @@ the owner reports successful local verification. Endpoint detail timelines are
 implemented with passing host tests and verified updates across tabs; see
 [endpoint details](endpoint-details.md).
 The [public status projection](public-status.md) is implemented with 101 passing
-host tests and an owner-verified browser workflow. Deployment and CI remain
-later milestones.
+host tests and an owner-verified browser workflow. [Health checks and CI](health-and-ci.md)
+are implemented; 110 host tests and both HTTP probes pass. The first GitHub
+workflow run and deployment remain pending.
 
 References consulted on 2026-11-09:
 
