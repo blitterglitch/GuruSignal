@@ -50,7 +50,8 @@ defmodule GuruSignalWeb do
 
   def live_view do
     quote do
-      use Phoenix.LiveView
+      # LiveView's default mount logger prints the entire session, including owner tokens.
+      use Phoenix.LiveView, log: false
 
       unquote(html_helpers())
     end

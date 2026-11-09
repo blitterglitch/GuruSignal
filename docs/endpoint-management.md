@@ -3,9 +3,9 @@
 Implemented at `/admin`, behind the existing owner login. The owner confirmed
 that the endpoint workflow behaves correctly on the host. Six database-independent
 changeset tests passed locally; the new domain, migration, LiveView, and test
-modules also compiled directly against installed dependencies. The latest full
-Mix test summary has not been supplied in the conversation; confirm it passes
-before committing this milestone.
+modules also compiled directly against installed dependencies. The owner has
+committed this milestone; its full Mix test output was not captured in the
+conversation. See [HTTP checking](http-checking.md) for the subsequent work.
 
 ## Behavior
 
@@ -28,12 +28,12 @@ hostname (or IP literal), no embedded credentials, fragments, whitespace, or
 backslashes. Punycode hostnames are supported; Unicode hostnames must first be
 converted to their ASCII form. Different configurations may share a name or URL.
 
-This milestone performs **no outbound requests or DNS lookups**. URL syntax
-validation is not SSRF protection: private destinations can still be stored at
-this stage. The next checking milestone must enforce destination policy at
-request time before any connection. The UI explicitly says automated checking
-is not running. Endpoint URLs are filtered from Phoenix parameter logs because
-their query strings may contain sensitive values.
+Configuration validation itself performs **no outbound requests or DNS lookups**.
+URL syntax validation is not SSRF protection: private destinations can be stored,
+but the subsequent [HTTP checker](http-checking.md) must authorize them at request
+time before connecting. That checker and its results UI are now implemented and
+awaiting host integration verification. Endpoint URLs are filtered from Phoenix
+parameter logs because their query strings may contain sensitive values.
 
 ## Domain and concurrency
 

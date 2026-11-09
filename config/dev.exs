@@ -52,8 +52,8 @@ config :guru_signal, GuruSignalWeb.Endpoint,
 # Enable dev routes for dashboard and mailbox
 config :guru_signal, dev_routes: true
 
-# Do not include metadata nor timestamps in development logs
-config :logger, :default_formatter, format: "[$level] $message\n"
+# Keep safe check identifiers/categories visible in development logs.
+config :logger, :default_formatter, format: "[$level] $message $metadata\n"
 
 # Set a higher stacktrace during development. Avoid configuring such
 # in production as building large stacktraces may be expensive.

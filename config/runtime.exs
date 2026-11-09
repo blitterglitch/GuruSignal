@@ -22,6 +22,11 @@ end
 
 config :guru_signal, :owner_password_hash, System.get_env("OWNER_PASSWORD_HASH")
 
+config :guru_signal,
+       :monitoring_enabled,
+       (config_env() == :dev and System.get_env("MONITORING_ENABLED", "true") == "true") or
+         (config_env() == :prod and System.get_env("MONITORING_ENABLED") == "true")
+
 config :guru_signal, GuruSignalWeb.Endpoint,
   http: [port: String.to_integer(System.get_env("PORT", "4000"))]
 

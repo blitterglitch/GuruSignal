@@ -12,7 +12,10 @@ defmodule GuruSignal.Monitoring do
     stale_error_message: "has changed; reopen the endpoint and try again"
   ]
 
-  def subscribe, do: Phoenix.PubSub.subscribe(GuruSignal.PubSub, @topic)
+  def subscribe do
+    Phoenix.PubSub.subscribe(GuruSignal.PubSub, @topic)
+    Phoenix.PubSub.subscribe(GuruSignal.PubSub, "monitoring:checks")
+  end
 
   def list_endpoints do
     Repo.all(from endpoint in Endpoint, order_by: [asc: endpoint.name, asc: endpoint.id])
@@ -33,15 +36,16 @@ defmodule GuruSignal.Monitoring do
   def create_endpoint(attrs) do
     %Endpoint{}
     |> Endpoint.changeset(attrs)
-    |> Repo.insert()
+    |> Repo.insert(log: false)
     |> broadcast_change()
   end
 
   def update_endpoint(%Endpoint{} = endpoint, attrs) do
     endpoint
     |> Endpoint.changeset(attrs)
+    |> Ecto.Changeset.put_change(:next_check_at, DateTime.utc_now())
     |> optimistic_lock(:lock_version)
-    |> Repo.update([force: true] ++ @stale_options)
+    |> Repo.update([force: true, log: false] ++ @stale_options)
     |> broadcast_change()
   end
 

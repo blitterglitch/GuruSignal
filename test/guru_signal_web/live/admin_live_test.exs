@@ -2,9 +2,11 @@ defmodule GuruSignalWeb.AdminLiveTest do
   use GuruSignalWeb.ConnCase, async: false
 
   import Phoenix.LiveViewTest
+  import ExUnit.CaptureLog
   import GuruSignal.MonitoringFixtures
   alias GuruSignal.Monitoring
   alias GuruSignal.OwnerAccess
+  alias GuruSignal.Monitoring.Checks
 
   setup_all do
     previous = Application.get_env(:guru_signal, :owner_password_hash)
@@ -111,5 +113,44 @@ defmodule GuruSignalWeb.AdminLiveTest do
     html = view |> form("#endpoint-form", endpoint: %{name: "Deleted"}) |> render_submit()
     assert html =~ "Endpoint changed in another session"
     assert Monitoring.list_endpoints() == []
+  end
+
+  test "completed checks update the endpoint and history without a refresh", %{conn: conn} do
+    endpoint = endpoint_fixture()
+    {:ok, view, _} = live(conn, ~p"/admin")
+    assert has_element?(view, "#endpoint-#{endpoint.id}", "Awaiting check")
+    {:ok, {_snapshot, run}} = Checks.claim(endpoint.id)
+
+    outcome = %{
+      success: false,
+      http_status: 503,
+      duration_ms: 123,
+      error_category: :unexpected_status
+    }
+
+    assert {:ok, {:recorded, _}} = Checks.complete(run.id, outcome)
+    assert render(view) =~ "Failing"
+    assert has_element?(view, "#check-#{run.id}", "503")
+    assert has_element?(view, "#check-#{run.id}", "Unexpected HTTP status")
+  end
+
+  test "LiveView mount logs cannot expose the owner session token", %{
+    conn: conn,
+    owner_token: token
+  } do
+    previous = Logger.level()
+    Logger.configure(level: :debug)
+
+    try do
+      logs =
+        capture_log([level: :debug], fn ->
+          assert {:ok, _view, _html} = live(conn, ~p"/admin")
+        end)
+
+      refute logs =~ token
+      refute logs =~ "Session:"
+    after
+      Logger.configure(level: previous)
+    end
   end
 end

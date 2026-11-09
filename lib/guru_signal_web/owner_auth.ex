@@ -30,9 +30,8 @@ defmodule GuruSignalWeb.OwnerAuth do
 
       socket =
         socket
-        |> Phoenix.Component.assign(:owner_token, token)
         |> Phoenix.LiveView.attach_hook(:owner_authorization, :handle_event, fn _, _, socket ->
-          if OwnerAccess.remaining(socket.assigns.owner_token) > 0 do
+          if OwnerAccess.remaining(token) > 0 do
             {:cont, socket}
           else
             {:halt, Phoenix.LiveView.redirect(socket, to: ~p"/login")}

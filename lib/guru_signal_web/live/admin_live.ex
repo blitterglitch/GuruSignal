@@ -3,6 +3,7 @@ defmodule GuruSignalWeb.AdminLive do
 
   alias GuruSignal.Monitoring
   alias GuruSignal.Monitoring.Endpoint
+  alias GuruSignal.Monitoring.{CheckRunner, Checks}
 
   @impl true
   def mount(_params, _session, socket) do
@@ -10,8 +11,9 @@ defmodule GuruSignalWeb.AdminLive do
 
     {:ok,
      socket
-     |> assign(:endpoints, Monitoring.list_endpoints())
+     |> refresh()
      |> assign(:page_title, "Endpoint administration")
+     |> assign(:monitoring_enabled, Application.get_env(:guru_signal, :monitoring_enabled, false))
      |> reset_form()}
   end
 
@@ -100,10 +102,65 @@ defmodule GuruSignalWeb.AdminLive do
     end
   end
 
+  def handle_event("check", %{"id" => id}, socket) do
+    case Monitoring.get_endpoint(id) do
+      nil ->
+        {:noreply, missing_endpoint(socket)}
+
+      %{enabled: false} ->
+        {:noreply, put_flash(socket, :error, "Enable the endpoint before checking it.")}
+
+      endpoint ->
+        case CheckRunner.enqueue(endpoint.id) do
+          {:ok, _pid} ->
+            {:noreply, put_flash(socket, :info, "Check requested. Results update automatically.")}
+
+          {:error, _reason} ->
+            {:noreply,
+             put_flash(socket, :error, "All check workers are busy. Try again shortly.")}
+        end
+    end
+  end
+
   @impl true
   def handle_info({:endpoint_changed, _id}, socket), do: {:noreply, refresh(socket)}
+  def handle_info({:check_completed, _id}, socket), do: {:noreply, refresh(socket)}
 
-  defp refresh(socket), do: assign(socket, :endpoints, Monitoring.list_endpoints())
+  defp refresh(socket) do
+    endpoints = Monitoring.list_endpoints()
+
+    socket
+    |> assign(:endpoints, endpoints)
+    |> assign(:latest_checks, Checks.latest_for(endpoints))
+    |> assign(:recent_checks, Checks.recent())
+  end
+
+  defp current_check(endpoint, latest) do
+    case Map.get(latest, endpoint.id) do
+      %{endpoint_version: version} = run when version == endpoint.lock_version -> run
+      _ -> nil
+    end
+  end
+
+  defp status_label(%{enabled: false}, _latest), do: "Paused"
+
+  defp status_label(endpoint, latest) do
+    case current_check(endpoint, latest) do
+      nil -> "Awaiting check"
+      %{success: true} -> "Healthy"
+      %{success: false} -> "Failing"
+    end
+  end
+
+  defp error_label(nil), do: "—"
+  defp error_label(:connection), do: "Connection / DNS failure"
+  defp error_label(:tls), do: "TLS failure"
+  defp error_label(:timeout), do: "Request timeout"
+  defp error_label(:unexpected_status), do: "Unexpected HTTP status"
+  defp error_label(:blocked_destination), do: "Destination blocked"
+  defp error_label(:response_limit), do: "Response limit exceeded"
+  defp error_label(:protocol), do: "Invalid HTTP response"
+  defp error_label(:internal), do: "Check could not complete"
 
   defp reset_form(socket) do
     endpoint = %Endpoint{}
@@ -141,8 +198,11 @@ defmodule GuruSignalWeb.AdminLive do
 
       <Layouts.flash_group flash={@flash} />
       <p class="rounded-lg border border-base-300 p-4">
-        Configuration only: automated checks are not running yet.
-        Enabled endpoints will be scheduled once checking is implemented.
+        <span :if={@monitoring_enabled}>Enabled endpoints are checked automatically.</span>
+        <span :if={not @monitoring_enabled}>Automatic checks are paused; use Check now to run an enabled endpoint on demand.</span>
+        Redirects are not followed.
+        Response time includes DNS and connection setup through receipt of final response headers.
+        Incident tracking is not implemented yet.
       </p>
 
       <section aria-labelledby="endpoint-editor-heading" class="rounded-lg border border-base-300 p-6">
@@ -209,7 +269,7 @@ defmodule GuruSignalWeb.AdminLive do
           >
             <div class="flex flex-wrap justify-between gap-3">
               <h3 class="font-semibold">{endpoint.name}</h3>
-              <span>{if endpoint.enabled, do: "Enabled · awaiting checks", else: "Paused"}</span>
+              <span>{status_label(endpoint, @latest_checks)}</span>
             </div>
             <p class="mt-2 break-all font-mono text-sm">{endpoint.url}</p>
             <dl class="mt-3 flex flex-wrap gap-6 text-sm">
@@ -223,7 +283,24 @@ defmodule GuruSignalWeb.AdminLive do
                 <dt class="font-semibold">Timeout</dt><dd>{endpoint.timeout_ms} ms</dd>
               </div>
             </dl>
+            <div :if={run = current_check(endpoint, @latest_checks)} class="mt-3 text-sm">
+              Last check:
+              <time datetime={DateTime.to_iso8601(run.checked_at)}>{DateTime.to_iso8601(
+                run.checked_at
+              )}</time>
+              · {run.duration_ms} ms · HTTP {run.http_status || "—"} · {error_label(
+                run.error_category
+              )}
+            </div>
             <div class="mt-4 flex flex-wrap gap-3">
+              <button
+                type="button"
+                phx-click="check"
+                phx-value-id={endpoint.id}
+                disabled={not endpoint.enabled}
+                class="btn btn-sm"
+                aria-label={"Check #{endpoint.name} now"}
+              >Check now</button>
               <button
                 id={"edit-endpoint-#{endpoint.id}"}
                 type="button"
@@ -254,6 +331,39 @@ defmodule GuruSignalWeb.AdminLive do
             </div>
           </li>
         </ul>
+      </section>
+
+      <section aria-labelledby="recent-checks-heading">
+        <h2 id="recent-checks-heading" class="text-xl font-semibold">Recent checks</h2>
+        <p :if={@recent_checks == []} class="mt-4">No completed checks yet.</p>
+        <div :if={@recent_checks != []} class="mt-4 overflow-x-auto">
+          <table id="recent-checks" class="table">
+            <caption class="sr-only">The twenty most recent completed checks, newest first</caption>
+            <thead>
+              <tr>
+                <th scope="col">Endpoint</th><th scope="col">Checked at (UTC)</th><th scope="col">
+                  Result
+                </th><th scope="col">HTTP</th><th scope="col">Expected</th><th scope="col">Time</th><th scope="col">
+                  Category
+                </th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr :for={run <- @recent_checks} id={"check-#{run.id}"}>
+                <th scope="row">{run.endpoint.name}</th>
+                <td>
+                  <time datetime={DateTime.to_iso8601(run.checked_at)}>{DateTime.to_iso8601(
+                    run.checked_at
+                  )}</time>
+                </td>
+                <td>{if run.success, do: "Success", else: "Failure"}</td>
+                <td>{run.http_status || "—"}</td><td>{run.expected_status}</td><td>
+                  {run.duration_ms} ms
+                </td><td>{error_label(run.error_category)}</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
       </section>
     </main>
     """

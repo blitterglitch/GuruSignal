@@ -84,8 +84,20 @@ defmodule GuruSignal.Monitoring.EndpointTest do
   end
 
   test "owner input cannot set the database identity or concurrency version" do
-    result = changeset(%{id: 123, lock_version: 999}) |> Ecto.Changeset.apply_changes()
+    result =
+      changeset(%{
+        id: 123,
+        lock_version: 999,
+        check_sequence: 999,
+        last_check_sequence: 999,
+        next_check_at: DateTime.utc_now()
+      })
+      |> Ecto.Changeset.apply_changes()
+
     assert result.id == nil
     assert result.lock_version == 1
+    assert result.check_sequence == 0
+    assert result.last_check_sequence == 0
+    assert result.next_check_at == nil
   end
 end

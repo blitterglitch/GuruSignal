@@ -8,12 +8,15 @@ defmodule GuruSignal.Monitoring.Endpoint do
 
   schema "endpoints" do
     field :name, :string
-    field :url, :string
+    field :url, :string, redact: true
     field :expected_status, :integer, default: 200
     field :interval_seconds, :integer, default: 60
     field :timeout_ms, :integer, default: 5_000
     field :enabled, :boolean, default: true
     field :lock_version, :integer, default: 1
+    field :check_sequence, :integer, default: 0
+    field :last_check_sequence, :integer, default: 0
+    field :next_check_at, :utc_datetime_usec
 
     timestamps(type: :utc_datetime)
   end

@@ -13,6 +13,13 @@ defmodule GuruSignal.Application do
       {DNSCluster, query: Application.get_env(:guru_signal, :dns_cluster_query) || :ignore},
       {Phoenix.PubSub, name: GuruSignal.PubSub},
       GuruSignal.OwnerAccess,
+      Supervisor.child_spec({Task.Supervisor, name: GuruSignal.HTTPTasks, max_children: 4},
+        id: GuruSignal.HTTPTasks
+      ),
+      Supervisor.child_spec({Task.Supervisor, name: GuruSignal.CheckWorkers, max_children: 4},
+        id: GuruSignal.CheckWorkers
+      ),
+      GuruSignal.Monitoring.Scheduler,
       # Start a worker by calling: GuruSignal.Worker.start_link(arg)
       # {GuruSignal.Worker, arg},
       # Start to serve requests, typically the last entry
