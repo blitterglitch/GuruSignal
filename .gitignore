@@ -1,0 +1,11 @@
+# Local credentials and tooling
+/.env
+/.env.*
+!/.env.example
+/.local-tools/
+/.hex/
+
+# Elixir build output
+/_build/
+/deps/
+/erl_crash.dump

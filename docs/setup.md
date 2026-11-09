@@ -13,11 +13,13 @@ Inspected on 2026-11-09 in `/home/dawid/edu/elixir/guru-signal`.
 | PostgreSQL server/client | Not found on PATH |
 | Podman | Present, but initialization fails on read-only `/run/user/1000/libpod` |
 | Fly CLI | Not found on PATH; not needed until deployment preparation |
-| Repository | Empty workspace; `.git` is empty and read-only; Git reports no repository |
+| Repository | Initialized on `main`; origin is `git@github.com:blitterglitch/GuruSignal.git`; sandbox Git metadata remains read-only |
 | Dependency access | `curl -I --connect-timeout 10 https://repo.hex.pm` fails DNS resolution |
 
-No applicable ancestor or repository `AGENTS.md` was found. No global tools were
-changed. No cloud resources, commits, pushes, or deployment were performed.
+The initial inspection found no contributor instructions; `AGENTS.md` has since
+been added. The owner committed the initial documentation and contributor guide
+from the host terminal. Agents must stop at commit milestones and ask the owner
+to execute the commit commands. No global tools or cloud resources were changed.
 
 ## Required environment changes
 
@@ -25,44 +27,68 @@ The coding environment needs outbound DNS/HTTPS access to GitHub, Hex, and Phoen
 asset download hosts, writable repository metadata, and access to PostgreSQL.
 Changing the app cannot resolve these execution-environment restrictions.
 
-Restore or clone the actual repository using the host environment before resuming.
-This workspace now contains planning documents: preserve them when bringing in the
-repository. Do not delete or replace the mounted `.git` directory from this session.
+The repository is now initialized and attached to GitHub. Git metadata remains
+read-only inside the coding sandbox; the owner handles commits on the host.
 
-## Local PostgreSQL option for Fedora
+## Local PostgreSQL with Podman
 
-Run these on the host, not inside the restricted coding environment. The package
-and service commands change system state and have not been executed here:
+Run from this repository on the host, where rootless Podman works:
 
 ```bash
-sudo dnf install postgresql-server postgresql-contrib
+cp .env.example .env.postgres
+chmod 600 .env.postgres
 ```
 
-Only for a **new, uninitialized** PostgreSQL installation:
+Edit `.env.postgres` and replace the password placeholder with a unique local
+password. Keep the supplied `POSTGRES_USER=postgres` and `POSTGRES_DB=postgres`;
+the helper's health check and SQL shell use these names. The file is ignored by
+Git. Do not source it as shell code. Podman reads it using `--env-file`.
 
 ```bash
-sudo postgresql-setup --initdb --unit postgresql
+bash bin/dev-db start
+bash bin/dev-db status
 ```
 
-Start the server and create a development-only role (the password prompt keeps
-the password out of shell history):
+Initialization takes a few seconds. Repeat `status` until it reports
+`running healthy`. To verify the server:
 
 ```bash
-sudo systemctl enable --now postgresql
-sudo -u postgres createuser --createdb --pwprompt guru_signal
-psql -h 127.0.0.1 -U guru_signal -d postgres -W -c 'SELECT version();'
+podman exec guru-signal-postgres psql -U postgres -d postgres -c 'SELECT version();'
 ```
 
-Use an existing role/database instead if already configured. Ensure localhost
-connections use SCRAM password authentication; do not weaken authentication to
-`trust`. The development role needs database creation for Ecto's dev/test setup;
-production will use separately scoped credentials. Supply the local connection
-through an ignored environment file or interactive environment settings once
-runtime configuration exists. Never commit its password.
+The helper uses `docker.io/library/postgres:17.11-bookworm`, a PostgreSQL 17
+image matching the intended production major version. The tag pins the minor
+version for repeatability but is not an immutable digest; review patch updates
+regularly. Its named volume `guru-signal-postgres-data` stores data at
+`/var/lib/postgresql/data`. Port 5432 is published only on `127.0.0.1`.
+No host PostgreSQL installation or Compose provider is required.
 
-Reference: [Fedora PostgreSQL guide](https://docs.fedoraproject.org/en-US/quick-docs/postgresql/).
-The documentation fetch was blocked by the site's access challenge during this
-session, so the commands above have not been verified against that live page.
+Other commands:
+
+```bash
+bash bin/dev-db logs
+bash bin/dev-db psql
+bash bin/dev-db stop
+```
+
+Stopping preserves data. Starting an existing container reuses its configuration.
+Changing the environment file does not rotate a database password: image
+initialization variables apply only to an empty volume. The development user is
+a superuser for Ecto database creation; use separately scoped production roles.
+If port 5432 is occupied, resolve the conflict before starting the container.
+Do not delete the named volume unless its development data can be discarded.
+
+The container's local SQL shell checks initialization. Host TCP password
+connectivity will be verified through Ecto after scaffolding. Configure Ecto to
+use `127.0.0.1`, port 5432, and the password from the ignored file; that runtime
+configuration has not been implemented yet.
+
+References: [official PostgreSQL image](https://hub.docker.com/_/postgres) and
+[Podman run options](https://docs.podman.io/en/latest/markdown/podman-run.1.html).
+The helper has passed shell syntax checks. The owner ran it on the host and
+reported `running healthy` from `bash bin/dev-db status`. Container startup
+remains blocked inside the coding session by read-only Podman runtime storage.
+Host TCP password connectivity through Ecto is still pending scaffolding.
 
 ## Planned scaffolding after access is restored
 

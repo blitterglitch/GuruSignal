@@ -1,0 +1,42 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+project_root="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")/.." && pwd)"
+container_name=guru-signal-postgres
+volume_name=guru-signal-postgres-data
+image=docker.io/library/postgres:17.11-bookworm
+
+case "${1:-}" in
+  start)
+    if podman container exists "$container_name"; then
+      podman start "$container_name"
+    else
+      if [[ ! -f "$project_root/.env.postgres" ]]; then
+        echo 'Copy .env.example to .env.postgres and set a local password first.' >&2
+        exit 1
+      fi
+      if ! awk '/^POSTGRES_PASSWORD=./ && !/^POSTGRES_PASSWORD=replace-with-/ {found=1} END {exit !found}' "$project_root/.env.postgres"; then
+        echo 'Set a nonempty POSTGRES_PASSWORD in .env.postgres first.' >&2
+        exit 1
+      fi
+      podman run --detach \
+        --name "$container_name" \
+        --env-file "$project_root/.env.postgres" \
+        --publish 127.0.0.1:5432:5432 \
+        --volume "$volume_name:/var/lib/postgresql/data" \
+        --health-cmd 'pg_isready -U postgres -d postgres' \
+        --health-interval 5s \
+        --health-timeout 3s \
+        --health-retries 10 \
+        "$image"
+    fi
+    ;;
+  stop) podman stop "$container_name" ;;
+  status) podman inspect --format '{{.State.Status}} {{.State.Health.Status}}' "$container_name" ;;
+  logs) podman logs --tail 100 "$container_name" ;;
+  psql) podman exec -it "$container_name" psql -U postgres -d postgres ;;
+  *)
+    echo 'Usage: bash bin/dev-db {start|stop|status|logs|psql}' >&2
+    exit 1
+    ;;
+esac

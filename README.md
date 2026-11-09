@@ -2,7 +2,7 @@
 
 Real-time endpoint monitoring and incident tracking, built with Phoenix LiveView.
 
-**Status: design and environment verification only.** The application has not yet
+**Status: design and local database tooling only.** The application has not yet
 been scaffolded, tested, or deployed. There is no live demo.
 
 GuruSignal is a single-owner learning and portfolio project. The intended MVP
@@ -17,6 +17,7 @@ See [the initial architecture](docs/architecture.md) and
 
 - [x] Inspect the available environment and consult official framework documentation.
 - [x] Record the proposed architecture, security controls, and local blockers.
+- [x] Prepare a PostgreSQL 17 Podman helper; owner verified `running healthy` on the host.
 - [ ] Generate Phoenix in this directory; resolve dependencies and verify compatibility.
 - [ ] Add endpoint management and single-owner authentication.
 - [ ] Implement and test secure HTTP checks and persisted results.
