@@ -46,4 +46,5 @@ come from the same bitmap source. Reference inputs remain in ignored local stora
 
 This uses the Kickstart bitmap, not the MIT-licensed Topaz Double reconstruction;
 no MIT license is claimed for the font. Original font rights remain with their
-respective holders. A project license has not yet been selected.
+respective holders. The three PNG images are excluded from the project's MIT
+license. See [third-party notices](../../THIRD_PARTY_NOTICES.md).

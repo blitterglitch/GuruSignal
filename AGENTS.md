@@ -54,5 +54,5 @@ validated-IP connections, disabled redirects, bounded requests, protected admin
 routes, and restricted public diagnostics.
 
 Do not push, create external resources, or incur cloud costs without explicit
-approval. Obtain approval before selecting a license. Explain new Elixir concepts
+approval. Obtain approval before changing the project license. Explain new Elixir concepts
 briefly and keep assistance disclosures factual and concise.

@@ -81,4 +81,8 @@ and LiveView behavior without relying on public Internet services.
 Codex assisted with research, scaffolding, implementation, and review. The author
 remained responsible for requirements, design decisions, validation, and the result.
 
-A license has not yet been selected.
+## License
+
+Original code and documentation are licensed under [MIT](LICENSE).
+Third-party materials retain their own terms; the Amiga-derived banner images are
+excluded. See [third-party notices](THIRD_PARTY_NOTICES.md).
