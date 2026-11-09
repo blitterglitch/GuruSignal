@@ -90,6 +90,8 @@ defmodule GuruSignal.Monitoring.EndpointTest do
         lock_version: 999,
         check_sequence: 999,
         last_check_sequence: 999,
+        consecutive_failures: 999,
+        consecutive_successes: 999,
         next_check_at: DateTime.utc_now()
       })
       |> Ecto.Changeset.apply_changes()
@@ -98,6 +100,8 @@ defmodule GuruSignal.Monitoring.EndpointTest do
     assert result.lock_version == 1
     assert result.check_sequence == 0
     assert result.last_check_sequence == 0
+    assert result.consecutive_failures == 0
+    assert result.consecutive_successes == 0
     assert result.next_check_at == nil
   end
 end

@@ -4,19 +4,22 @@
 
 Real-time endpoint monitoring and incident tracking, built with Phoenix LiveView.
 
-**Status: endpoint management, secure HTTP checks, scheduling, and result history implemented.**
+**Status: endpoint management, secure HTTP checks, scheduling, result history, and incident tracking implemented.**
 The owner verified authentication and endpoint controls in the browser, and
 reported passing host checks after the latest fixes. Real checks recorded the
 expected success, status mismatch, redirect, and timeout outcomes. Final browser
 verification of blocked destinations and live result updates remains pending.
 Dependency compilation emits warnings documented in the setup and owner-access
-guides. Incident tracking, the public status page, and deployment remain pending.
+guides. The owner reports successful local verification of incident tracking.
+The public status page and deployment remain pending.
 There is no live demo.
 
 See [the endpoint-management guide](docs/endpoint-management.md) for behavior,
 validation rules, and verification commands.
 See [HTTP checking](docs/http-checking.md) for the SSRF policy, scheduler limits,
 and the new milestone's verification steps.
+See [incident transitions](docs/incidents.md) for the three-failure/two-success
+rules, concurrency guarantees, and the current milestone's verification steps.
 
 GuruSignal is a single-owner learning and portfolio project. The intended MVP
 manages HTTP endpoints, checks them periodically, opens an incident after three
@@ -38,7 +41,7 @@ session behavior, and known limitations.
 - [x] Add and verify single-owner authentication and protected administration.
 - [x] Add endpoint management and verify the owner workflow in the browser.
 - [x] Implement secure HTTP checks and persisted results; owner reports host tests pass.
-- [ ] Implement and test incident transitions and duplicate/stale result handling.
+- [x] Implement and test incident transitions and duplicate/stale result handling; owner verified locally.
 - [ ] Add the LiveView dashboard, details, and public status page.
 - [ ] Review concurrency, SSRF, accessibility, logging, and Telemetry.
 - [ ] Add health checks, CI, release configuration, and operational documentation.

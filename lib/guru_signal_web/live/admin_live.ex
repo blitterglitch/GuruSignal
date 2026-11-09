@@ -3,7 +3,7 @@ defmodule GuruSignalWeb.AdminLive do
 
   alias GuruSignal.Monitoring
   alias GuruSignal.Monitoring.Endpoint
-  alias GuruSignal.Monitoring.{CheckRunner, Checks}
+  alias GuruSignal.Monitoring.{CheckRunner, Checks, Incidents}
 
   @impl true
   def mount(_params, _session, socket) do
@@ -128,11 +128,15 @@ defmodule GuruSignalWeb.AdminLive do
 
   defp refresh(socket) do
     endpoints = Monitoring.list_endpoints()
+    incidents = Incidents.active()
 
     socket
     |> assign(:endpoints, endpoints)
     |> assign(:latest_checks, Checks.latest_for(endpoints))
     |> assign(:recent_checks, Checks.recent())
+    |> assign(:active_incidents, incidents)
+    |> assign(:open_by_endpoint, Map.new(incidents, &{&1.endpoint_id, &1}))
+    |> assign(:recent_incidents, Incidents.recent())
   end
 
   defp current_check(endpoint, latest) do
@@ -142,13 +146,27 @@ defmodule GuruSignalWeb.AdminLive do
     end
   end
 
-  defp status_label(%{enabled: false}, _latest), do: "Paused"
+  defp status_label(%{enabled: false}, _latest, _open), do: "Paused"
 
-  defp status_label(endpoint, latest) do
-    case current_check(endpoint, latest) do
-      nil -> "Awaiting check"
-      %{success: true} -> "Healthy"
-      %{success: false} -> "Failing"
+  defp status_label(endpoint, latest, open) do
+    cond do
+      Map.has_key?(open, endpoint.id) and endpoint.consecutive_successes == 1 ->
+        "Recovering (1/2 successes)"
+
+      Map.has_key?(open, endpoint.id) ->
+        "Incident open"
+
+      is_nil(current_check(endpoint, latest)) ->
+        "Awaiting check"
+
+      current_check(endpoint, latest).success ->
+        "Healthy"
+
+      endpoint.consecutive_failures == 0 ->
+        "Awaiting confirmation"
+
+      true ->
+        "Failing (#{endpoint.consecutive_failures}/3 failures)"
     end
   end
 
@@ -202,8 +220,36 @@ defmodule GuruSignalWeb.AdminLive do
         <span :if={not @monitoring_enabled}>Automatic checks are paused; use Check now to run an enabled endpoint on demand.</span>
         Redirects are not followed.
         Response time includes DNS and connection setup through receipt of final response headers.
-        Incident tracking is not implemented yet.
+        Incidents open after three consecutive failures and resolve after two consecutive successes.
       </p>
+
+      <section id="active-incidents" aria-labelledby="active-incidents-heading">
+        <h2 id="active-incidents-heading" class="text-xl font-semibold">
+          Active incidents ({length(@active_incidents)})
+        </h2>
+        <p :if={@active_incidents == []} class="mt-3">No active incidents.</p>
+        <ul class="mt-4 space-y-3">
+          <li
+            :for={incident <- @active_incidents}
+            id={"active-incident-#{incident.id}"}
+            class="rounded-lg border border-error p-4"
+          >
+            <h3 class="font-semibold">
+              {incident.endpoint.name} <span class="font-mono">#{incident.id}</span>
+            </h3>
+            <p>
+              Opened
+              <time datetime={DateTime.to_iso8601(incident.opened_at)}>{DateTime.to_iso8601(
+                incident.opened_at
+              )}</time>
+              · {error_label(incident.error_category)}
+            </p>
+            <p :if={not incident.endpoint.enabled} class="mt-2">
+              Monitoring paused; this incident remains open.
+            </p>
+          </li>
+        </ul>
+      </section>
 
       <section aria-labelledby="endpoint-editor-heading" class="rounded-lg border border-base-300 p-6">
         <h2 id="endpoint-editor-heading" class="text-xl font-semibold">
@@ -269,9 +315,14 @@ defmodule GuruSignalWeb.AdminLive do
           >
             <div class="flex flex-wrap justify-between gap-3">
               <h3 class="font-semibold">{endpoint.name}</h3>
-              <span>{status_label(endpoint, @latest_checks)}</span>
+              <span>{status_label(endpoint, @latest_checks, @open_by_endpoint)}</span>
             </div>
             <p class="mt-2 break-all font-mono text-sm">{endpoint.url}</p>
+            <a
+              :if={incident = @open_by_endpoint[endpoint.id]}
+              href={"#active-incident-#{incident.id}"}
+              class="mt-2 inline-block font-mono underline"
+            >Incident #{incident.id}</a>
             <dl class="mt-3 flex flex-wrap gap-6 text-sm">
               <div>
                 <dt class="font-semibold">Expected status</dt><dd>{endpoint.expected_status}</dd>
@@ -325,7 +376,7 @@ defmodule GuruSignalWeb.AdminLive do
                 phx-click="delete"
                 phx-value-id={endpoint.id}
                 aria-label={"Delete #{endpoint.name}"}
-                data-confirm="Delete this endpoint? This cannot be undone."
+                data-confirm="Delete this endpoint and its check/incident history? This cannot be undone."
                 class="btn btn-sm btn-error btn-outline"
               >Delete</button>
             </div>
@@ -360,6 +411,42 @@ defmodule GuruSignalWeb.AdminLive do
                 <td>{run.http_status || "—"}</td><td>{run.expected_status}</td><td>
                   {run.duration_ms} ms
                 </td><td>{error_label(run.error_category)}</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <section aria-labelledby="incident-history-heading">
+        <h2 id="incident-history-heading" class="text-xl font-semibold">Incident history</h2>
+        <p :if={@recent_incidents == []} class="mt-3">No incidents recorded.</p>
+        <div :if={@recent_incidents != []} class="mt-4 overflow-x-auto">
+          <table id="incident-history" class="table">
+            <caption class="sr-only">The twenty most recent incidents, newest first</caption>
+            <thead>
+              <tr>
+                <th scope="col">Incident</th><th scope="col">Endpoint</th><th scope="col">
+                  Opened (UTC)
+                </th><th scope="col">Resolved (UTC)</th><th scope="col">Opening category</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr :for={incident <- @recent_incidents} id={"incident-history-#{incident.id}"}>
+                <th scope="row" class="font-mono">#{incident.id}</th><td>{incident.endpoint.name}</td>
+                <td>
+                  <time datetime={DateTime.to_iso8601(incident.opened_at)}>{DateTime.to_iso8601(
+                    incident.opened_at
+                  )}</time>
+                </td>
+                <td>
+                  <time
+                    :if={incident.resolved_at}
+                    datetime={DateTime.to_iso8601(incident.resolved_at)}
+                  >{DateTime.to_iso8601(incident.resolved_at)}</time><span :if={
+                    is_nil(incident.resolved_at)
+                  }>Open</span>
+                </td>
+                <td>{error_label(incident.error_category)}</td>
               </tr>
             </tbody>
           </table>

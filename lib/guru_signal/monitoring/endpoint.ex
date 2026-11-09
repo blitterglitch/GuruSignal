@@ -17,6 +17,8 @@ defmodule GuruSignal.Monitoring.Endpoint do
     field :check_sequence, :integer, default: 0
     field :last_check_sequence, :integer, default: 0
     field :next_check_at, :utc_datetime_usec
+    field :consecutive_failures, :integer, default: 0
+    field :consecutive_successes, :integer, default: 0
 
     timestamps(type: :utc_datetime)
   end

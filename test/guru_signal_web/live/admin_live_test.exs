@@ -6,7 +6,7 @@ defmodule GuruSignalWeb.AdminLiveTest do
   import GuruSignal.MonitoringFixtures
   alias GuruSignal.Monitoring
   alias GuruSignal.OwnerAccess
-  alias GuruSignal.Monitoring.Checks
+  alias GuruSignal.Monitoring.{Checks, Incidents}
 
   setup_all do
     previous = Application.get_env(:guru_signal, :owner_password_hash)
@@ -152,5 +152,28 @@ defmodule GuruSignalWeb.AdminLiveTest do
     after
       Logger.configure(level: previous)
     end
+  end
+
+  test "incident opens after three failures and stays visible until the second recovery success",
+       %{conn: conn} do
+    endpoint = endpoint_fixture()
+    {:ok, view, _} = live(conn, ~p"/admin")
+    base = ~U[2026-11-09 12:00:00.000000Z]
+    completed_check_fixture(endpoint, false, at: base)
+    assert render(view) =~ "Failing (1/3 failures)"
+    assert has_element?(view, "#active-incidents", "No active incidents")
+    completed_check_fixture(endpoint, false, at: DateTime.add(base, 1, :second))
+    completed_check_fixture(endpoint, false, at: DateTime.add(base, 2, :second))
+    assert render(view) =~ "Incident open"
+    [incident] = Incidents.active()
+    assert has_element?(view, "#active-incident-#{incident.id}", "Homepage")
+
+    completed_check_fixture(endpoint, true, at: DateTime.add(base, 3, :second))
+    assert render(view) =~ "Recovering (1/2 successes)"
+    assert has_element?(view, "#active-incident-#{incident.id}")
+    completed_check_fixture(endpoint, true, at: DateTime.add(base, 4, :second))
+    assert has_element?(view, "#endpoint-#{endpoint.id}", "Healthy")
+    refute has_element?(view, "#active-incident-#{incident.id}")
+    assert has_element?(view, "#incident-history-#{incident.id}", "2026-11-09T12:00:04.001000Z")
   end
 end

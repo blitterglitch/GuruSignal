@@ -39,8 +39,9 @@ History retains the expected HTTP status used by each check.
 Response time covers DNS, connection setup, TLS, and receipt of the final response
 headers. This is a status-only GET check, not full-body download timing. A 3xx
 response succeeds only if that code is explicitly expected; it is never followed.
-An endpoint's first failing check is shown as failing; incident thresholds are
-not implemented in this milestone.
+An endpoint's first failing check is shown as failing. The subsequent
+[incident milestone](incidents.md) adds three-failure/two-success thresholds;
+its implementation is awaiting host verification.
 
 ## SSRF controls
 
@@ -141,8 +142,9 @@ test database and removes its committed row afterward. LiveView tests cover
 completion broadcasts and safe result display.
 
 History currently has no automatic retention cleanup. Add and verify batched
-retention before production deployment. Incident transitions, endpoint detail
-timelines, public status projection, deployment, and CI remain later milestones.
+retention before production deployment. Incident transitions are implemented;
+the owner reports successful local verification. Endpoint detail timelines, public
+status projection, deployment, and CI remain later milestones.
 
 References consulted on 2026-11-09:
 

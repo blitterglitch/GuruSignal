@@ -2,7 +2,7 @@ defmodule GuruSignal.Monitoring.Checks do
   @moduledoc "Transactional claims and idempotent application of endpoint check results."
   import Ecto.Query
   require Logger
-  alias GuruSignal.Monitoring.{CheckRun, Endpoint}
+  alias GuruSignal.Monitoring.{CheckRun, Endpoint, Incidents}
   alias GuruSignal.Repo
   @topic "monitoring:checks"
 
@@ -90,11 +90,8 @@ defmodule GuruSignal.Monitoring.Checks do
           true ->
             case run |> CheckRun.completion_changeset(outcome, now) |> Repo.update() do
               {:ok, completed} ->
-                endpoint
-                |> Ecto.Changeset.change(last_check_sequence: run.sequence)
-                |> Repo.update!()
-
-                {:recorded, completed}
+                transition = Incidents.apply_result(endpoint, completed)
+                {:recorded, completed, transition}
 
               {:error, changeset} ->
                 Repo.rollback(changeset)
@@ -103,7 +100,7 @@ defmodule GuruSignal.Monitoring.Checks do
       end)
 
     case result do
-      {:ok, {:recorded, run}} ->
+      {:ok, {:recorded, run, transition}} ->
         Phoenix.PubSub.broadcast(GuruSignal.PubSub, @topic, {:check_completed, run.endpoint_id})
 
         :telemetry.execute([:guru_signal, :check, :stop], %{duration_ms: run.duration_ms}, %{
@@ -118,11 +115,12 @@ defmodule GuruSignal.Monitoring.Checks do
           error_category: run.error_category
         )
 
-      _ ->
-        :ok
-    end
+        Incidents.notify_transition(transition)
+        {:ok, {:recorded, run}}
 
-    result
+      other ->
+        other
+    end
   end
 
   def latest_for(endpoints) do

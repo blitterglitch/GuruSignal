@@ -44,6 +44,8 @@ defmodule GuruSignal.Monitoring do
     endpoint
     |> Endpoint.changeset(attrs)
     |> Ecto.Changeset.put_change(:next_check_at, DateTime.utc_now())
+    |> Ecto.Changeset.force_change(:consecutive_failures, 0)
+    |> Ecto.Changeset.force_change(:consecutive_successes, 0)
     |> optimistic_lock(:lock_version)
     |> Repo.update([force: true, log: false] ++ @stale_options)
     |> broadcast_change()
