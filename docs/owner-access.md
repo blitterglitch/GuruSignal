@@ -4,7 +4,8 @@ Authentication is implemented. The owner ran the test suite on the host: all
 12 tests passed, with no warnings reported for GuruSignal modules. The owner
 confirmed the final compile and browser checks: signed-out access redirects to
 login, the configured password opens administration, and logout blocks access
-again. Endpoint management is not yet implemented.
+again. [Endpoint management](endpoint-management.md) has since been implemented
+and its browser workflow verified by the owner.
 
 PBKDF2 2.3.1 emits three dependency warnings under Elixir 1.20 about unpinned
 variables in bitstring size expressions. No dependency files were modified and

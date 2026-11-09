@@ -1,15 +1,260 @@
 defmodule GuruSignalWeb.AdminLive do
   use GuruSignalWeb, :live_view
 
+  alias GuruSignal.Monitoring
+  alias GuruSignal.Monitoring.Endpoint
+
+  @impl true
+  def mount(_params, _session, socket) do
+    if connected?(socket), do: Monitoring.subscribe()
+
+    {:ok,
+     socket
+     |> assign(:endpoints, Monitoring.list_endpoints())
+     |> assign(:page_title, "Endpoint administration")
+     |> reset_form()}
+  end
+
+  @impl true
+  def handle_event("new", _params, socket), do: {:noreply, reset_form(socket)}
+
+  def handle_event("edit", %{"id" => id}, socket) do
+    case Monitoring.get_endpoint(id) do
+      nil ->
+        {:noreply, missing_endpoint(socket)}
+
+      endpoint ->
+        {:noreply,
+         socket
+         |> assign(:editing, endpoint)
+         |> assign(:form, to_form(Monitoring.change_endpoint(endpoint)))}
+    end
+  end
+
+  def handle_event("validate", %{"endpoint" => attrs}, socket) do
+    changeset =
+      socket.assigns.editing
+      |> Monitoring.change_endpoint(attrs)
+      |> Map.put(:action, :validate)
+
+    {:noreply, assign(socket, :form, to_form(changeset))}
+  end
+
+  def handle_event("save", %{"endpoint" => attrs}, socket) do
+    editing = socket.assigns.editing
+
+    result =
+      if editing.id do
+        Monitoring.update_endpoint(editing, attrs)
+      else
+        Monitoring.create_endpoint(attrs)
+      end
+
+    case result do
+      {:ok, _endpoint} ->
+        message = if editing.id, do: "Endpoint updated.", else: "Endpoint created."
+        {:noreply, socket |> refresh() |> reset_form() |> put_flash(:info, message)}
+
+      {:error, changeset} ->
+        if Keyword.has_key?(changeset.errors, :lock_version) do
+          {:noreply, stale_endpoint(socket)}
+        else
+          {:noreply, assign(socket, :form, to_form(changeset))}
+        end
+    end
+  end
+
+  def handle_event("toggle", %{"id" => id}, socket) do
+    case Monitoring.get_endpoint(id) do
+      nil ->
+        {:noreply, missing_endpoint(socket)}
+
+      endpoint ->
+        case Monitoring.update_endpoint(endpoint, %{enabled: not endpoint.enabled}) do
+          {:ok, updated} ->
+            message = if updated.enabled, do: "Endpoint enabled.", else: "Endpoint paused."
+            {:noreply, socket |> refresh() |> put_flash(:info, message)}
+
+          {:error, _changeset} ->
+            {:noreply, stale_endpoint(socket)}
+        end
+    end
+  end
+
+  def handle_event("delete", %{"id" => id}, socket) do
+    case Monitoring.get_endpoint(id) do
+      nil ->
+        {:noreply, missing_endpoint(socket)}
+
+      endpoint ->
+        case Monitoring.delete_endpoint(endpoint) do
+          {:ok, deleted} ->
+            socket =
+              if socket.assigns.editing.id == deleted.id, do: reset_form(socket), else: socket
+
+            {:noreply, socket |> refresh() |> put_flash(:info, "Endpoint deleted.")}
+
+          {:error, _changeset} ->
+            {:noreply, stale_endpoint(socket)}
+        end
+    end
+  end
+
+  @impl true
+  def handle_info({:endpoint_changed, _id}, socket), do: {:noreply, refresh(socket)}
+
+  defp refresh(socket), do: assign(socket, :endpoints, Monitoring.list_endpoints())
+
+  defp reset_form(socket) do
+    endpoint = %Endpoint{}
+
+    socket
+    |> assign(:editing, endpoint)
+    |> assign(:form, to_form(Monitoring.change_endpoint(endpoint)))
+  end
+
+  defp missing_endpoint(socket) do
+    socket |> refresh() |> reset_form() |> put_flash(:error, "Endpoint no longer exists.")
+  end
+
+  defp stale_endpoint(socket) do
+    socket
+    |> refresh()
+    |> reset_form()
+    |> put_flash(
+      :error,
+      "Endpoint changed in another session. Select Edit to load the latest version."
+    )
+  end
+
   @impl true
   def render(assigns) do
     ~H"""
-    <main class="mx-auto max-w-3xl px-6 py-16">
-      <h1 class="text-2xl font-semibold">GuruSignal administration</h1>
-      <p class="mt-4">Owner access is protected. Endpoint management is the next step.</p>
-      <.link href={~p"/logout"} method="delete" class="mt-6 inline-block underline">
-        Sign out
-      </.link>
+    <main class="mx-auto max-w-5xl px-6 py-10 space-y-8">
+      <header class="flex flex-wrap items-center justify-between gap-4">
+        <div>
+          <h1 class="text-2xl font-semibold">GuruSignal administration</h1>
+          <p class="mt-2">Configure your monitored endpoints.</p>
+        </div>
+        <.link href={~p"/logout"} method="delete" class="underline">Sign out</.link>
+      </header>
+
+      <Layouts.flash_group flash={@flash} />
+      <p class="rounded-lg border border-base-300 p-4">
+        Configuration only: automated checks are not running yet.
+        Enabled endpoints will be scheduled once checking is implemented.
+      </p>
+
+      <section aria-labelledby="endpoint-editor-heading" class="rounded-lg border border-base-300 p-6">
+        <h2 id="endpoint-editor-heading" class="text-xl font-semibold">
+          {if @editing.id, do: "Edit endpoint", else: "Add endpoint"}
+        </h2>
+        <.form for={@form} id="endpoint-form" phx-change="validate" phx-submit="save" class="mt-4">
+          <div class="grid gap-x-6 sm:grid-cols-2">
+            <.input field={@form[:name]} label="Name" required maxlength="100" />
+            <.input
+              field={@form[:url]}
+              type="url"
+              label="URL"
+              required
+              maxlength="2048"
+              placeholder="https://example.com/health"
+            />
+            <.input
+              field={@form[:expected_status]}
+              type="number"
+              label="Expected HTTP status"
+              required
+              min="200"
+              max="599"
+            />
+            <.input
+              field={@form[:interval_seconds]}
+              type="select"
+              label="Check interval"
+              options={[{"60 seconds", 60}, {"5 minutes", 300}, {"15 minutes", 900}]}
+            />
+            <.input
+              field={@form[:timeout_ms]}
+              type="number"
+              label="Request timeout (milliseconds)"
+              required
+              min="1000"
+              max="10000"
+            />
+          </div>
+          <.input field={@form[:enabled]} type="checkbox" label="Enabled" />
+          <p class="mb-4 text-sm">
+            HTTP port 80 or HTTPS port 443 only. No URL credentials or fragments.
+          </p>
+          <div class="flex gap-3">
+            <button type="submit" class="btn btn-primary" phx-disable-with="Saving…">
+              {if @editing.id, do: "Save changes", else: "Create endpoint"}
+            </button>
+            <button :if={@editing.id} type="button" phx-click="new" class="btn btn-ghost">Cancel edit</button>
+          </div>
+        </.form>
+      </section>
+
+      <section aria-labelledby="endpoints-heading">
+        <h2 id="endpoints-heading" class="text-xl font-semibold">Endpoints ({length(@endpoints)})</h2>
+        <p :if={@endpoints == []} id="empty-endpoints" class="mt-4">
+          No endpoints yet. Add your first endpoint above.
+        </p>
+        <ul id="endpoints" class="mt-4 space-y-4">
+          <li
+            :for={endpoint <- @endpoints}
+            id={"endpoint-#{endpoint.id}"}
+            class="rounded-lg border border-base-300 p-5"
+          >
+            <div class="flex flex-wrap justify-between gap-3">
+              <h3 class="font-semibold">{endpoint.name}</h3>
+              <span>{if endpoint.enabled, do: "Enabled · awaiting checks", else: "Paused"}</span>
+            </div>
+            <p class="mt-2 break-all font-mono text-sm">{endpoint.url}</p>
+            <dl class="mt-3 flex flex-wrap gap-6 text-sm">
+              <div>
+                <dt class="font-semibold">Expected status</dt><dd>{endpoint.expected_status}</dd>
+              </div>
+              <div>
+                <dt class="font-semibold">Interval</dt><dd>{endpoint.interval_seconds} seconds</dd>
+              </div>
+              <div>
+                <dt class="font-semibold">Timeout</dt><dd>{endpoint.timeout_ms} ms</dd>
+              </div>
+            </dl>
+            <div class="mt-4 flex flex-wrap gap-3">
+              <button
+                id={"edit-endpoint-#{endpoint.id}"}
+                type="button"
+                phx-click="edit"
+                phx-value-id={endpoint.id}
+                aria-label={"Edit #{endpoint.name}"}
+                class="btn btn-sm"
+              >Edit</button>
+              <button
+                id={"toggle-endpoint-#{endpoint.id}"}
+                type="button"
+                phx-click="toggle"
+                phx-value-id={endpoint.id}
+                aria-label={"#{if endpoint.enabled, do: "Pause", else: "Enable"} #{endpoint.name}"}
+                class="btn btn-sm"
+              >
+                {if endpoint.enabled, do: "Pause", else: "Enable"}
+              </button>
+              <button
+                id={"delete-endpoint-#{endpoint.id}"}
+                type="button"
+                phx-click="delete"
+                phx-value-id={endpoint.id}
+                aria-label={"Delete #{endpoint.name}"}
+                data-confirm="Delete this endpoint? This cannot be undone."
+                class="btn btn-sm btn-error btn-outline"
+              >Delete</button>
+            </div>
+          </li>
+        </ul>
+      </section>
     </main>
     """
   end

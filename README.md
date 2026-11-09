@@ -4,11 +4,16 @@
 
 Real-time endpoint monitoring and incident tracking, built with Phoenix LiveView.
 
-**Status: Phoenix skeleton and owner authentication verified on the owner's host.**
-Database setup, asset builds, formatting, and compilation passed; all 12 tests
-passed. Browser login, protected administration, and logout were verified.
+**Status: owner authentication and endpoint management implemented.**
+The owner verified login, protected administration, logout, and endpoint controls
+in the browser. The previous authentication milestone passed all 12 tests; six
+new validation tests pass locally. The latest full-suite summary is not recorded.
 Dependency compilation emits warnings documented in the setup and owner-access
-guides. Endpoint management and deployment remain pending. There is no live demo.
+guides. Automated checks, incident tracking, and deployment remain pending.
+There is no live demo.
+
+See [the endpoint-management guide](docs/endpoint-management.md) for behavior,
+validation rules, and verification commands.
 
 GuruSignal is a single-owner learning and portfolio project. The intended MVP
 manages HTTP endpoints, checks them periodically, opens an incident after three
@@ -28,7 +33,7 @@ session behavior, and known limitations.
 - [x] Generate Phoenix in this directory.
 - [x] Resolve dependencies and verify database setup, builds, and generated tests.
 - [x] Add and verify single-owner authentication and protected administration.
-- [ ] Add endpoint management.
+- [x] Add endpoint management and verify the owner workflow in the browser.
 - [ ] Implement and test secure HTTP checks and persisted results.
 - [ ] Implement and test incident transitions and duplicate/stale result handling.
 - [ ] Add the LiveView dashboard, details, and public status page.
