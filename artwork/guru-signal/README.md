@@ -4,6 +4,9 @@ Standalone concept artwork.
 
 - `guru-signal.png`: native **640×400** canvas.
 - `guru-signal-2x.png`: **1280×800** nearest-neighbor preview.
+- `guru-signal-banner.png`: **1280×156** README banner, cropped exactly to the
+  frame's outer edge and enlarged 2× with nearest-neighbor scaling. The README
+  displays it at 100% of the available content width.
 - `measurements.json`: input checksums, provenance, text positions, and verification results.
 
 The native image preserves the reference's **640×78 frame**, with **6-pixel

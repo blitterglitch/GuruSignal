@@ -167,13 +167,18 @@ def main():
     image, placements = render(reference, font, background, foreground, frame, border)
     preview = image.resize((1280, 800), Image.Resampling.NEAREST)
     require(preview.resize(image.size, Image.Resampling.NEAREST).tobytes() == image.tobytes(), "Scaling changed pixels")
+    cropped = image.crop(frame)
+    banner = cropped.resize((cropped.width * 2, cropped.height * 2), Image.Resampling.NEAREST)
+    require(all(banner.getpixel((x, banner.height - 1)) == foreground for x in range(banner.width)), "Banner must end at the frame border")
 
     # Validate everything before creating or replacing any deliverables.
     args.output_dir.mkdir(parents=True, exist_ok=True)
     image.save(args.output_dir / "guru-signal.png")
     preview.save(args.output_dir / "guru-signal-2x.png")
+    banner.save(args.output_dir / "guru-signal-banner.png")
     metrics = {
         "canvas": list(image.size), "frame_box_exclusive": list(frame),
+        "readme_banner_canvas": list(banner.size),
         "border_px": {side: border for side in ("top", "right", "bottom", "left")},
         "foreground_rgb": list(foreground), "background_rgb": list(background),
         "glyph_cell": [10, 18], "source_cell": [10, 9], "pixel_scale": [1, 2],

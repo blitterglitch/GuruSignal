@@ -1,4 +1,4 @@
-![Guru Signal — Less meditation. More remediation.](artwork/guru-signal/guru-signal.png)
+<img src="artwork/guru-signal/guru-signal-banner.png" alt="Guru Signal — Less meditation. More remediation." width="100%">
 
 # GuruSignal
 
