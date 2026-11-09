@@ -87,6 +87,14 @@ defmodule GuruSignalWeb.AdminLiveTest do
     assert html =~ "must be an HTTP or HTTPS URL"
     assert Monitoring.list_endpoints() == []
     assert has_element?(view, "#endpoint_name[value=Invalid]")
+    assert has_element?(view, "#endpoint-form-errors[role=alert]")
+
+    assert has_element?(
+             view,
+             "#endpoint_url[aria-invalid=true][aria-describedby=endpoint_url-errors]"
+           )
+
+    assert has_element?(view, "#endpoint_url-errors", "must be an HTTP or HTTPS URL")
   end
 
   test "stale edits are rejected while configuration updates reach connected views", %{conn: conn} do

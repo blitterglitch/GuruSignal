@@ -30,6 +30,12 @@ defmodule GuruSignalWeb.StatusLiveTest do
     completed_check_fixture(endpoint, false, at: base)
     assert has_element?(view, "#service-#{endpoint.id}", "Check failing")
 
+    assert has_element?(
+             view,
+             "#service-#{endpoint.id} [role=status][aria-live=polite][aria-atomic=true]",
+             "Public service:"
+           )
+
     for step <- 1..2,
         do: completed_check_fixture(endpoint, false, at: DateTime.add(base, step, :second))
 

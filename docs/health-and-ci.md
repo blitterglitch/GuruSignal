@@ -5,7 +5,8 @@ as errors, the full suite (110 passed with seed 459195), and the asset build.
 Both health endpoints returned HTTP 200 with status `ok` in the running app.
 Three focused tests also passed in the coding sandbox; workflow YAML, action
 pins, permissions, database settings, and shell syntax passed local checks.
-The first GitHub Actions run is pending.
+The owner also reported a successful GitHub Actions run with three dependency
+deprecation warnings, described below.
 
 ## Health endpoints
 
@@ -56,13 +57,21 @@ Dependency compilation runs separately so known upstream warnings remain visible
 application compilation treats warnings as errors. No additional static-analysis
 tool or production release build is claimed by this workflow.
 
+The first successful remote run reported three instances of the deprecated
+`xref: [exclude: ...]` configuration. The installed `postgrex`, `phoenix_ecto`,
+and `phoenix_live_dashboard` dependencies still use it in their own `mix.exs`
+files; GuruSignal's `mix.exs` does not. Elixir currently translates that option
+to `elixirc_options: [no_warn_undefined: ...]` and emits a warning. Keep the
+warnings visible and address them through upstream dependency updates rather
+than editing fetched dependency files.
+
 Actions are pinned to verified commit IDs, repository-token access is read-only,
 and checkout does not retain credentials. Runs have a 15-minute limit; a newer
 run cancels an older run for the same ref. Review action pins when updating them.
 The workflow does not deploy, publish artifacts, or modify the repository.
 
-The first remote run requires the workflow commit to be pushed. That has not
-been done by the agent; no passing CI badge or successful remote run is claimed.
+The owner pushed the workflow and reported its first successful remote run.
+The agent did not push or dispatch it. No CI badge has been added.
 Review any account-specific Actions usage limits before running it.
 
 ## Local verification

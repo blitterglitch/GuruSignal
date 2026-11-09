@@ -50,7 +50,7 @@ defmodule GuruSignalWeb.EndpointLive do
   @impl true
   def render(assigns) do
     ~H"""
-    <main class="mx-auto max-w-5xl px-6 py-10 space-y-8">
+    <main id="main-content" tabindex="-1" class="mx-auto max-w-5xl px-6 py-10 space-y-8">
       <header class="flex flex-wrap items-center justify-between gap-4">
         <.link navigate={~p"/admin"} class="underline">Back to dashboard</.link>
         <.link href={~p"/logout"} method="delete" class="underline">Sign out</.link>
@@ -59,7 +59,15 @@ defmodule GuruSignalWeb.EndpointLive do
       <div :if={@endpoint} id="endpoint-detail" class="space-y-8">
         <section aria-labelledby="endpoint-heading">
           <h1 id="endpoint-heading" class="text-2xl font-semibold">{@endpoint.name}</h1>
-          <p id="endpoint-status" class="mt-2 font-semibold">{@status}</p>
+          <p
+            id="endpoint-status"
+            role="status"
+            aria-live="polite"
+            aria-atomic="true"
+            class="mt-2 font-semibold"
+          >
+            {@status}
+          </p>
           <p class="mt-2 break-all font-mono text-sm">{@endpoint.url}</p>
           <dl class="mt-4 flex flex-wrap gap-6 text-sm">
             <div>

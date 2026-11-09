@@ -85,7 +85,10 @@ the destination or rejection category. Remove the fixture afterward.
   validation against the actual deployment topology. Dev diagnostic routes are
   intended for local development.
 - [Health endpoints and CI](health-and-ci.md) are implemented; 110 host tests and
-  both HTTP probes pass. The first remote workflow run is pending.
-- Accessibility/browser connection-loss checks, operational Telemetry review,
-  and dependency advisory checks remain separate work. Passing these tests
+  both HTTP probes pass. The owner reported a successful remote workflow run
+  with three upstream dependency deprecation warnings.
+- [Accessibility and operational visibility](accessibility-and-observability.md)
+  improvements are implemented with owner-confirmed local verification. Further
+  assistive-technology and visual checks remain documented.
+  Dependency advisory checks remain separate work. Passing these tests
   does not constitute a complete production readiness review.

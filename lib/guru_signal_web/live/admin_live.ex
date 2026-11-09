@@ -166,7 +166,7 @@ defmodule GuruSignalWeb.AdminLive do
   @impl true
   def render(assigns) do
     ~H"""
-    <main class="mx-auto max-w-5xl px-6 py-10 space-y-8">
+    <main id="main-content" tabindex="-1" class="mx-auto max-w-5xl px-6 py-10 space-y-8">
       <header class="flex flex-wrap items-center justify-between gap-4">
         <div>
           <h1 class="text-2xl font-semibold">GuruSignal administration</h1>
@@ -218,6 +218,14 @@ defmodule GuruSignalWeb.AdminLive do
           {if @editing.id, do: "Edit endpoint", else: "Add endpoint"}
         </h2>
         <.form for={@form} id="endpoint-form" phx-change="validate" phx-submit="save" class="mt-4">
+          <p
+            :if={@form.source.action in [:insert, :update] and @form.errors != []}
+            id="endpoint-form-errors"
+            role="alert"
+            class="mb-4 text-error"
+          >
+            Could not save the endpoint. Review the fields marked with errors below.
+          </p>
           <div class="grid gap-x-6 sm:grid-cols-2">
             <.input field={@form[:name]} label="Name" required maxlength="100" />
             <.input
@@ -280,7 +288,13 @@ defmodule GuruSignalWeb.AdminLive do
               <h3 class="font-semibold">
                 <.link navigate={~p"/admin/endpoints/#{endpoint.id}"} class="underline">{endpoint.name}</.link>
               </h3>
-              <span>{status_label(endpoint, @latest_checks, @open_by_endpoint)}</span>
+              <span role="status" aria-live="polite" aria-atomic="true">
+                <span class="sr-only">{endpoint.name}: </span>{status_label(
+                  endpoint,
+                  @latest_checks,
+                  @open_by_endpoint
+                )}
+              </span>
             </div>
             <p class="mt-2 break-all font-mono text-sm">{endpoint.url}</p>
             <a
@@ -320,8 +334,9 @@ defmodule GuruSignalWeb.AdminLive do
               <button
                 id={"edit-endpoint-#{endpoint.id}"}
                 type="button"
-                phx-click="edit"
-                phx-value-id={endpoint.id}
+                phx-click={
+                  JS.push("edit", value: %{id: endpoint.id}) |> JS.focus(to: "#endpoint_name")
+                }
                 aria-label={"Edit #{endpoint.name}"}
                 class="btn btn-sm"
               >Edit</button>

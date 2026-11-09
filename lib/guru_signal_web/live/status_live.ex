@@ -39,7 +39,7 @@ defmodule GuruSignalWeb.StatusLive do
   @impl true
   def render(assigns) do
     ~H"""
-    <main class="mx-auto max-w-5xl px-6 py-10 space-y-8">
+    <main id="main-content" tabindex="-1" class="mx-auto max-w-5xl px-6 py-10 space-y-8">
       <header class="border-4 border-error p-6">
         <p class="font-mono text-sm">Guru Signal</p>
         <h1 class="mt-2 text-3xl font-semibold">Service status</h1>
@@ -68,7 +68,9 @@ defmodule GuruSignalWeb.StatusLive do
             class={["rounded-lg border p-5", state_class(service.state)]}
           >
             <h3 class="font-semibold">{service.name}</h3>
-            <p class="mt-2">{state_label(service.state)}</p>
+            <p role="status" aria-live="polite" aria-atomic="true" class="mt-2">
+              <span class="sr-only">{service.name}: </span>{state_label(service.state)}
+            </p>
             <p :if={service.checked_at} class="mt-2 text-sm">
               Last checked
               <time datetime={DateTime.to_iso8601(service.checked_at)}>{DateTime.to_iso8601(

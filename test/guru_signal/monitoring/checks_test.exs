@@ -103,4 +103,34 @@ defmodule GuruSignal.Monitoring.ChecksTest do
     assert Enum.map(Checks.recent_for(endpoint.id), & &1.id) == [third.id, second.id, first.id]
     assert Enum.map(Checks.recent_for(endpoint.id, 2), & &1.id) == [third.id, second.id]
   end
+
+  test "only accepted results emit check telemetry with safe measurements and metadata" do
+    endpoint = endpoint_fixture(%{url: "https://example.com/private?secret=hidden"})
+    endpoint_id = endpoint.id
+    handler = {__MODULE__, make_ref()}
+
+    :telemetry.attach(
+      handler,
+      [:guru_signal, :check, :stop],
+      &__MODULE__.observe_check/4,
+      {self(), endpoint_id}
+    )
+
+    on_exit(fn -> :telemetry.detach(handler) end)
+    {:ok, {_snapshot, run}} = Checks.claim(endpoint_id)
+    assert {:ok, {:recorded, _}} = Checks.complete(run.id, @success)
+
+    assert_received {:observed_check, %{duration_ms: 42},
+                     %{endpoint_id: ^endpoint_id, success: true, error_category: nil} = metadata}
+
+    assert Map.keys(metadata) |> Enum.sort() == [:endpoint_id, :error_category, :success]
+    refute inspect(metadata) =~ "hidden"
+    assert {:ok, :ignored} = Checks.complete(run.id, @success)
+    refute_received {:observed_check, _, %{endpoint_id: ^endpoint_id}}
+  end
+
+  def observe_check(_event, measurements, metadata, {pid, endpoint_id}) do
+    if metadata.endpoint_id == endpoint_id,
+      do: send(pid, {:observed_check, measurements, metadata})
+  end
 end

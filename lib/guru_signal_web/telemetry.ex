@@ -21,6 +21,20 @@ defmodule GuruSignalWeb.Telemetry do
 
   def metrics do
     [
+      counter("guru_signal.check.stop.count",
+        tags: [:success, :error_category],
+        description: "Accepted completed checks"
+      ),
+      summary("guru_signal.check.stop.duration_ms",
+        tags: [:success],
+        unit: :millisecond,
+        description:
+          "Check time through final response headers, including DNS and connection setup"
+      ),
+      counter("guru_signal.incident.transition.count",
+        tags: [:transition],
+        description: "Committed incident openings and resolutions"
+      ),
       # Phoenix Metrics
       summary("phoenix.endpoint.start.system_time",
         unit: {:native, :millisecond}

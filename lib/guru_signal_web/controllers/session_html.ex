@@ -3,7 +3,7 @@ defmodule GuruSignalWeb.SessionHTML do
 
   def new(assigns) do
     ~H"""
-    <main class="mx-auto max-w-md px-6 py-16">
+    <main id="main-content" tabindex="-1" class="mx-auto max-w-md px-6 py-16">
       <h1 class="text-2xl font-semibold">GuruSignal owner login</h1>
       <p class="mt-2">Sign in to manage monitored endpoints.</p>
       <p :if={@error} role="alert" class="mt-4 text-error">{@error}</p>

@@ -211,6 +211,8 @@ defmodule GuruSignalWeb.CoreComponents do
         Phoenix.HTML.Form.normalize_value("checkbox", assigns[:value])
       end)
 
+    assigns = input_accessibility(assigns)
+
     ~H"""
     <div class="fieldset mb-2">
       <label for={@id}>
@@ -233,12 +235,16 @@ defmodule GuruSignalWeb.CoreComponents do
           />{@label}
         </span>
       </label>
-      <.error :for={msg <- @errors}>{msg}</.error>
+      <div :if={@errors != []} id={@error_id}>
+        <.error :for={msg <- @errors}>{msg}</.error>
+      </div>
     </div>
     """
   end
 
   def input(%{type: "select"} = assigns) do
+    assigns = input_accessibility(assigns)
+
     ~H"""
     <div class="fieldset mb-2">
       <label for={@id}>
@@ -254,12 +260,16 @@ defmodule GuruSignalWeb.CoreComponents do
           {Phoenix.HTML.Form.options_for_select(@options, @value)}
         </select>
       </label>
-      <.error :for={msg <- @errors}>{msg}</.error>
+      <div :if={@errors != []} id={@error_id}>
+        <.error :for={msg <- @errors}>{msg}</.error>
+      </div>
     </div>
     """
   end
 
   def input(%{type: "textarea"} = assigns) do
+    assigns = input_accessibility(assigns)
+
     ~H"""
     <div class="fieldset mb-2">
       <label for={@id}>
@@ -274,13 +284,17 @@ defmodule GuruSignalWeb.CoreComponents do
           {@rest}
         >{Phoenix.HTML.Form.normalize_value("textarea", @value)}</textarea>
       </label>
-      <.error :for={msg <- @errors}>{msg}</.error>
+      <div :if={@errors != []} id={@error_id}>
+        <.error :for={msg <- @errors}>{msg}</.error>
+      </div>
     </div>
     """
   end
 
   # All other inputs text, datetime-local, url, password, etc. are handled here...
   def input(assigns) do
+    assigns = input_accessibility(assigns)
+
     ~H"""
     <div class="fieldset mb-2">
       <label for={@id}>
@@ -297,9 +311,27 @@ defmodule GuruSignalWeb.CoreComponents do
           {@rest}
         />
       </label>
-      <.error :for={msg <- @errors}>{msg}</.error>
+      <div :if={@errors != []} id={@error_id}>
+        <.error :for={msg <- @errors}>{msg}</.error>
+      </div>
     </div>
     """
+  end
+
+  defp input_accessibility(assigns) do
+    error_id = if assigns.errors != [] and assigns.id, do: "#{assigns.id}-errors"
+
+    described_by =
+      [assigns.rest[:"aria-describedby"], error_id]
+      |> Enum.reject(&is_nil/1)
+      |> Enum.join(" ")
+
+    rest =
+      assigns.rest
+      |> Map.put(:"aria-invalid", if(assigns.errors != [], do: "true", else: "false"))
+      |> Map.put(:"aria-describedby", if(described_by == "", do: nil, else: described_by))
+
+    assign(assigns, rest: rest, error_id: error_id)
   end
 
   # Helper used by inputs to generate form errors

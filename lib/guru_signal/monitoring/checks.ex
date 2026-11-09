@@ -112,6 +112,9 @@ defmodule GuruSignal.Monitoring.Checks do
         Logger.info("Endpoint check completed",
           endpoint_id: run.endpoint_id,
           check_id: run.id,
+          success: run.success,
+          duration_ms: run.duration_ms,
+          http_status: run.http_status,
           error_category: run.error_category
         )
 
