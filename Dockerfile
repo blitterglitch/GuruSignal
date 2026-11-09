@@ -1,5 +1,5 @@
-# Based on the Phoenix 1.8 release template. Build and run on Debian trixie.
-# Tags verified against docker-library/official-images; pin digests before deployment.
+# Phoenix release built and run on Debian trixie.
+# fly.trial.toml supplies digest-pinned overrides for these base images.
 ARG BUILDER_IMAGE=docker.io/library/elixir:1.20.5-otp-29-slim
 ARG RUNNER_IMAGE=docker.io/library/debian:trixie-slim
 FROM ${BUILDER_IMAGE} AS builder

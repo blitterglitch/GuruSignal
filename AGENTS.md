@@ -1,61 +1,58 @@
 # Repository Guidelines
 
-## Project Structure & Module Organization
+## Project Structure
 
-GuruSignal is currently a planning-only repository: `README.md` tracks scope and
-progress; `docs/architecture.md` describes the proposed design; `docs/setup.md`
-records initial environment findings. Recheck those findings before relying on them.
+Guru Signal is a single-owner Phoenix application for learning Elixir and operating
+on Fly.io. Keep the scope small and the documentation accurate. Use “Guru Signal”
+in prose; preserve code identifiers such as `GuruSignal.Monitoring.Endpoint`.
 
-After Phoenix scaffolding, use `lib/guru_signal/` for domain contexts,
-`lib/guru_signal_web/` for controllers, components, and LiveViews,
-`priv/repo/migrations/` for migrations, `assets/` for frontend assets, and `test/`
-for tests mirroring source paths. Generate directly in this repository.
+- `lib/guru_signal/`: domain contexts, monitoring workers, and owner sessions.
+- `lib/guru_signal_web/`: controllers, components, LiveViews, and authentication.
+- `priv/repo/migrations/`: schema changes and database constraints.
+- `assets/`: CSS and JavaScript; `artwork/`: banner assets and provenance.
+- `test/`: ExUnit tests mirroring source paths.
+- `docs/`: setup, architecture, security, operations, testing, and deployment.
 
-## Build, Test, and Development Commands
+## Development Commands
 
-No `mix.exs` exists yet. After scaffolding and configuring PostgreSQL:
+Follow [local setup](docs/setup.md) first. Use PostgreSQL 17 in Podman and wait for
+`bash bin/dev-db status` to report `running healthy`.
 
-- `mix deps.get` — fetch dependencies.
-- `mix ecto.create` and `mix ecto.migrate` — create databases and apply migrations.
-- `mix assets.setup` and `mix assets.build` — install asset tools and build assets.
-- `mix phx.server` — run the local application.
-- `mix format --check-formatted` — check formatting; use `mix format` to fix it.
-- `mix compile --warnings-as-errors` — compile and reject warnings.
-- `mix test` — run ExUnit tests; append a test path for focused checks.
+- `python3 bin/mix-local setup`: fetch dependencies, migrate, and build assets.
+- `python3 bin/mix-local phx.server`: start the development server.
+- `python3 bin/mix-local ecto.migrate`: apply migrations.
+- `python3 bin/mix-local format --check-formatted`: verify formatting; omit the flag to apply it.
+- `python3 bin/mix-local compile --warnings-as-errors`: compile application code strictly.
+- `python3 bin/mix-local test`: run tests; append a path or `--seed` to focus a run.
+- `python3 bin/mix-local assets.build`: build CSS and JavaScript.
 
-Use PostgreSQL 17 in Podman with persistent local storage. The intended production
-setup is Fly Machines with Fly Managed Postgres, subject to cost approval.
+The helper loads ignored local configuration and forwards standard Mix commands.
 
-## Coding Style & Naming Conventions
+## Coding and Testing
 
-Use two-space indentation and standard Elixir formatting. Name modules
-`GuruSignal.Monitoring.Endpoint`, files `endpoint.ex`, and functions/variables
-`snake_case`. Keep incident rules in domain code and network calls outside web
-processes. Prefer focused modules and standard Phoenix assets. No additional
-linter has been selected.
+Use two-space indentation, standard Elixir formatting, `snake_case` filenames and
+functions, and descriptive modules such as `GuruSignal.Monitoring.Endpoint`.
+Keep incident rules in domain code and network calls outside web processes and
+database transactions. Preserve the single-node deployment assumptions.
 
-## Testing Guidelines
+Name tests `*_test.exs` and describe observable behavior. Cover incident thresholds,
+stale/duplicate results, concurrency, authentication, and SSRF boundaries. Inject
+HTTP/DNS dependencies; tests must not rely on public Internet services. No coverage
+percentage is required. Report only checks actually executed.
 
-Use ExUnit, Ecto database tests, and focused LiveView tests. Name files
-`*_test.exs` and describe observable behavior. Test three-failure opening,
-two-success recovery, duplicate/stale results, concurrency, authentication, and
-SSRF boundaries. Inject HTTP/DNS boundaries; tests must not depend on public
-Internet services. No coverage percentage is required.
+## Commits and Pull Requests
 
-## Commit & Pull Request Guidelines
+Use focused changes and imperative subjects, such as `Add endpoint validation`.
+The user performs commits: provide commands and wait for confirmation before
+continuing to the next milestone. PRs should explain behavior, validation, and
+limitations; link relevant issues and include screenshots for UI changes.
 
-There are no commits yet, so no historical convention exists. Use small milestone
-commits with imperative subjects, such as `Add endpoint validation`. PRs should
-explain the problem, resulting behavior, validation performed, and limitations.
-Link relevant issues and include screenshots for UI changes. Do not claim checks
-passed unless executed.
+## Security and Agent Instructions
 
-## Security & Agent Instructions
-
-Never commit secrets or response bodies. Enforce request-time destination checks,
-validated-IP connections, disabled redirects, and bounded requests. Protect admin
-routes and LiveView mounts. Keep public diagnostics restricted.
+Never commit secrets or response bodies. Preserve destination validation,
+validated-IP connections, disabled redirects, bounded requests, protected admin
+routes, and restricted public diagnostics.
 
 Do not push, create external resources, or incur cloud costs without explicit
 approval. Obtain approval before selecting a license. Explain new Elixir concepts
-briefly and document agent assistance honestly.
+briefly and keep assistance disclosures factual and concise.

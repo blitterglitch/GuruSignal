@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Prepare ignored settings for local container probes; does not create a database or run cleanup."""
+"""Write private local configuration for container health probes."""
 import os
 from pathlib import Path
 import secrets

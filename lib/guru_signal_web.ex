@@ -1,20 +1,9 @@
 defmodule GuruSignalWeb do
   @moduledoc """
-  The entrypoint for defining your web interface, such
-  as controllers, components, channels, and so on.
+  Shared Phoenix imports, aliases, and route helpers.
 
-  This can be used in your application as:
-
-      use GuruSignalWeb, :controller
-      use GuruSignalWeb, :html
-
-  The definitions below will be executed for every controller,
-  component, etc, so keep them short and clean, focused
-  on imports, uses and aliases.
-
-  Do NOT define functions inside the quoted expressions
-  below. Instead, define additional modules and import
-  those modules here.
+  Use `GuruSignalWeb` with a role such as `:controller`, `:html`, or `:live_view`.
+  Keep quoted definitions limited to setup; put application behavior in modules.
   """
 
   def static_paths, do: ~w(assets fonts images favicon.ico robots.txt)

@@ -1,7 +1,5 @@
-# Approved for a short credit-only trial in organization personal; no paid upgrade.
-# Owner validated this configuration; trial database provisioning has started.
-# Trial credit applies to the signup personal organization.
-# Change PHX_HOST if app name changes.
+# Configuration from the completed single-Machine trial; resources were removed.
+# Set app and PHX_HOST for a new deployment.
 app = "guru-signal"
 primary_region = "fra"
 kill_signal = "SIGTERM"

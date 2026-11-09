@@ -1,11 +1,2 @@
-# Script for populating the database. You can run it as:
-#
-#     mix run priv/repo/seeds.exs
-#
-# Inside the script, you can read and write to any of your
-# repositories directly:
-#
-#     GuruSignal.Repo.insert!(%GuruSignal.SomeSchema{})
-#
-# We recommend using the bang functions (`insert!`, `update!`
-# and so on) as they will fail if something goes wrong.
+# No default endpoints or owner credentials are seeded. Configure them through the UI
+# and bin/set-owner-password after running the setup tasks.

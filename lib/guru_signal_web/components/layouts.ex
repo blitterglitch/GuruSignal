@@ -1,22 +1,14 @@
 defmodule GuruSignalWeb.Layouts do
   @moduledoc """
-  This module holds layouts and related functionality
-  used by your application.
+  Shared page layout, flash messages, and theme controls.
   """
   use GuruSignalWeb, :html
 
-  # Embed all files in layouts/* within this module.
-  # The default root.html.heex file contains the HTML
-  # skeleton of your application, namely HTML headers
-  # and other static content.
+  # Embed the root HTML document and any additional layout templates.
   embed_templates "layouts/*"
 
   @doc """
-  Renders your app layout.
-
-  This function is typically invoked from every template,
-  and it often contains your application menu, sidebar,
-  or similar.
+  Renders the shared navigation, page content, and flash messages.
 
   ## Examples
 

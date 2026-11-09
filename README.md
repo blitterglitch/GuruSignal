@@ -1,95 +1,84 @@
 <img src="artwork/guru-signal/guru-signal-banner.png" alt="Guru Signal — Less meditation. More remediation." width="100%">
 
-# GuruSignal
+# Guru Signal
 
 Real-time endpoint monitoring and incident tracking, built with Phoenix LiveView.
 
-**Status: endpoint management, secure HTTP checks, scheduling, result history, and incident tracking implemented.**
-The owner verified authentication and endpoint controls in the browser, and
-reported passing host checks after the latest fixes. Real checks recorded the
-expected success, status mismatch, redirect, and timeout outcomes. Final browser
-verification of blocked destinations remains pending. The owner verified live
-detail-page updates across browser tabs.
-Dependency compilation emits warnings documented in the setup and owner-access
-guides. The owner reports successful local verification of incident tracking.
-The public status page is implemented; 101 tests pass and the owner verified it
-in the browser. A temporary Fly trial deployment was subsequently verified;
-the owner confirmed removal of its trial resources afterward.
-The owner endpoint detail page is implemented; host checks passed with 90 tests.
-There is no live demo.
+Guru Signal checks HTTP services, tracks failures, and publishes a live status page.
+It a project built to learn Elixir, OTP, Phoenix, and application operations on Fly.io.
+Its deliberately small scope emphasizes reliable checks, safe outbound requests, and clear incident state.
 
-See [the endpoint-management guide](docs/endpoint-management.md) for behavior,
-validation rules, and verification commands.
-See [HTTP checking](docs/http-checking.md) for the SSRF policy, scheduler limits,
-and the new milestone's verification steps.
-See [incident transitions](docs/incidents.md) for the three-failure/two-success
-rules, concurrency guarantees, and the current milestone's verification steps.
-See [endpoint details](docs/endpoint-details.md) for scoped history, live updates,
-and verification instructions.
-See [public status](docs/public-status.md) for the disclosure boundary, freshness
-rules, and verification instructions. Endpoint names are public service labels.
-See the [security and concurrency review](docs/security-review.md) for findings,
-regression coverage, and remaining deployment limits.
-See [health checks and CI](docs/health-and-ci.md) for probe behavior, workflow
-configuration, and verification status.
-See [accessibility and operational visibility](docs/accessibility-and-observability.md)
-for the verified interaction improvements, monitoring metrics, and further accessibility checks.
-See [check-history retention](docs/retention.md) for the opt-in cleanup policy,
-preserved data, and verification status.
-See [production releases](docs/releases.md) for the prepared container,
-runtime settings, migration command, and owner-verified local smoke test.
-See the [Fly trial proposal](docs/fly-trial.md) and `fly.trial.toml` for the
-approved credit-only deployment; the owner deployed the app and verified its
-HTTPS health probes and browser workflows, including the Edit focus fix.
-The owner confirmed removal of the trial app and database after verification.
+## Features
 
-GuruSignal is a single-owner learning and portfolio project. The intended MVP
-manages HTTP endpoints, checks them periodically, opens an incident after three
-consecutive failures, and resolves it after two consecutive successes. A protected
-LiveView dashboard and a public status page expose different levels of detail.
+- Manage endpoints, pause monitoring, and trigger checks from a protected dashboard.
+- Open incidents after three consecutive failures; resolve them after two successes.
+- Inspect check history and incident timelines, with live updates across browser tabs.
+- Publish service status without exposing URLs or private diagnostics.
+- Validate outbound destinations at request time, including DNS and IPv6 restrictions.
+- Expose health probes, structured logs, Telemetry events, and optional history cleanup.
 
-See [the initial architecture](docs/architecture.md) and
-[environment findings and setup](docs/setup.md).
-See [single-owner administration](docs/owner-access.md) for credential setup,
-session behavior, and known limitations.
+The interface takes its name and visual cues from the Amiga's Guru Meditation
+error. Notifications, teams, content assertions, and multi-region monitoring are
+outside the current scope.
 
-## Roadmap
+## Run locally
 
-- [x] Inspect the available environment and consult official framework documentation.
-- [x] Record the proposed architecture, security controls, and local blockers.
-- [x] Prepare a PostgreSQL 17 Podman helper; owner verified `running healthy` on the host.
-- [x] Generate Phoenix in this directory.
-- [x] Resolve dependencies and verify database setup, builds, and generated tests.
-- [x] Add and verify single-owner authentication and protected administration.
-- [x] Add endpoint management and verify the owner workflow in the browser.
-- [x] Implement secure HTTP checks and persisted results; owner reports host tests pass.
-- [x] Implement and test incident transitions and duplicate/stale result handling; owner verified locally.
-- [x] Add the live owner dashboard with endpoint status, recent checks, and active incidents.
-- [x] Add endpoint detail pages; 90 tests pass and the owner verified updates across tabs.
-- [x] Add the public status page with restricted data and stale-result handling; 101 tests pass and the owner verified the browser workflow.
-- [x] Verify security/concurrency review fixes and additional race tests; 104 tests pass on the host.
-- [x] Add accessibility improvements and operational metric/log updates; owner confirmed local verification.
-- [x] Add health endpoints; 110 tests pass and the owner verified both HTTP probes.
-- [x] Run the GitHub Actions workflow; the owner reports success with three upstream dependency deprecation warnings.
-- [x] Add opt-in batched check-history retention and verify its concurrency tests; 127 tests pass on the host.
-- [x] Add the production release/container; 130 tests pass and the owner verified both container health probes.
-- [x] Complete an approved Fly trial deployment, verify HTTPS/browser workflows, and remove trial resources.
-- [ ] Finalize ongoing production and recovery configuration if paid hosting is later approved.
-- [ ] Add verified screenshots and local setup/test instructions.
+Use Elixir 1.20.5 / OTP 29.1.2, Python 3, Git, and Podman. PostgreSQL 17 runs in a
+local container.
+Follow [local setup](docs/setup.md) for first-time dependency installation.
 
-Notifications, content assertions, latency incidents, regional quorum, teams, and
-billing are outside the MVP.
+```bash
+cp .env.example .env.postgres
+# Set a development password in .env.postgres before continuing.
+bash bin/dev-db start
+bash bin/dev-db status  # Wait for: running healthy
+python3 bin/mix-local local.hex --force
+python3 bin/mix-local local.rebar --force
+python3 bin/mix-local setup
+python3 bin/set-owner-password
+python3 bin/mix-local phx.server
+```
 
-## Agent-assisted development
+Open `http://localhost:4000` for public status or `/login` for administration.
+`bin/mix-local` loads ignored local credentials and forwards commands to Mix.
 
-Codex has assisted with environment inspection, research, and the initial design.
-The owner ran Phoenix scaffolding on the host; Codex reviewed and adapted its
-local configuration. Implementation and review will continue with agent assistance.
-The project owner remains responsible for requirements, design decisions,
-validation, and the final result. This section will be updated to reflect work
-actually completed.
+## Design
 
-## License
+A Phoenix monolith combines LiveView, Ecto, PostgreSQL, and supervised OTP workers.
+Network checks run outside database transactions and web processes. PostgreSQL
+claims, configuration versions, and row locks prevent duplicate or stale results
+from changing incident state. PubSub refreshes connected views after commits.
 
-A license has not yet been selected. The owner must approve the choice before a
-license is added.
+The deployment target is one application Machine in one region. A temporary Fly.io
+trial with Fly Managed Postgres was deployed and verified, then removed. There is
+currently no live demo. The release and Fly configuration document this deployment;
+high availability is outside the project scope.
+
+## Development
+
+```bash
+python3 bin/mix-local format --check-formatted
+python3 bin/mix-local compile --warnings-as-errors
+python3 bin/mix-local test
+python3 bin/mix-local assets.build
+```
+
+[GitHub Actions](.github/workflows/ci.yml) runs these checks against PostgreSQL.
+Tests cover incident rules, concurrent updates, authentication, SSRF boundaries,
+and LiveView behavior without relying on public Internet services.
+
+## Documentation
+
+- [Local setup](docs/setup.md): prerequisites, credentials, and everyday commands.
+- [Architecture](docs/architecture.md): data flow, consistency, and design trade-offs.
+- [Security](docs/security.md): threat model, access control, and public data boundaries.
+- [Operations](docs/operations.md): health checks, observability, and retention.
+- [Testing](docs/testing.md): verification commands, coverage, and CI.
+- [Deployment](docs/deployment.md): releases, Fly configuration, and recovery.
+
+## Development notes
+
+Codex assisted with research, scaffolding, implementation, and review. The author
+remained responsible for requirements, design decisions, validation, and the result.
+
+A license has not yet been selected.
