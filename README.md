@@ -1,3 +1,5 @@
+![Guru Signal — Less meditation. More remediation.](artwork/guru-signal/guru-signal.png)
+
 # GuruSignal
 
 Real-time endpoint monitoring and incident tracking, built with Phoenix LiveView.

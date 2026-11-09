@@ -1,0 +1,76 @@
+{
+  "canvas": [
+    640,
+    400
+  ],
+  "frame_box_exclusive": [
+    0,
+    0,
+    640,
+    78
+  ],
+  "border_px": {
+    "top": 6,
+    "right": 6,
+    "bottom": 6,
+    "left": 6
+  },
+  "foreground_rgb": [
+    255,
+    32,
+    0
+  ],
+  "background_rgb": [
+    16,
+    16,
+    16
+  ],
+  "glyph_cell": [
+    10,
+    18
+  ],
+  "source_cell": [
+    10,
+    9
+  ],
+  "pixel_scale": [
+    1,
+    2
+  ],
+  "reference_segments_matched": 3,
+  "distinct_reference_glyphs_matched": 28,
+  "reference_sha256": "be7220a7702a96b652a9dbee7b6dd8e49cc857bc956eca3b4f88e2d3ab054d97",
+  "font_sha256": "8a18e0beb414d310530af824cccea330b1168218a9aef4632d6334302198721b",
+  "reference_source": "https://toastytech.com/guis/amiga1guru.png",
+  "font_source": "https://raw.githubusercontent.com/robhagemans/hoard-of-bitfonts/80f28e9d2262517688b0cffa40d8a8d770ddde01/amiga/amiga-ks13-topaz-09.yaff",
+  "placements": [
+    {
+      "text": "Service failure. Stay calm. We are watching.",
+      "x": 100,
+      "y": 9,
+      "cell_box": [
+        440,
+        18
+      ]
+    },
+    {
+      "text": "Less meditation. More remediation.",
+      "x": 150,
+      "y": 30,
+      "cell_box": [
+        340,
+        18
+      ]
+    },
+    {
+      "text": "Guru Signal #00000003.00000002",
+      "x": 170,
+      "y": 51,
+      "cell_box": [
+        300,
+        18
+      ]
+    }
+  ],
+  "native_pixels_sha256": "5b0c2d724c12cde989712ca155b903b632af8d39ecfcbd39ff7b6f73d8df03c8"
+}

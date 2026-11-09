@@ -1,0 +1,194 @@
+#!/usr/bin/env python3
+"""Render the approved banner and verify its font/frame against the reference."""
+
+import argparse
+from collections import Counter
+import hashlib
+import json
+from pathlib import Path
+import re
+
+from PIL import Image, ImageChops, ImageDraw
+
+
+ROOT = Path(__file__).resolve().parent.parent
+REFERENCE_SHA256 = "be7220a7702a96b652a9dbee7b6dd8e49cc857bc956eca3b4f88e2d3ab054d97"
+FONT_SHA256 = "8a18e0beb414d310530af824cccea330b1168218a9aef4632d6334302198721b"
+FONT_SOURCE = (
+    "https://raw.githubusercontent.com/robhagemans/hoard-of-bitfonts/"
+    "80f28e9d2262517688b0cffa40d8a8d770ddde01/amiga/amiga-ks13-topaz-09.yaff"
+)
+TEXT = (
+    "Service failure. Stay calm. We are watching.",
+    "Less meditation. More remediation.",
+    "Guru Signal #00000003.00000002",
+)
+
+
+def require(condition, message):
+    if not condition:
+        raise ValueError(message)
+
+
+def checked_bytes(path, expected):
+    data = path.read_bytes()
+    require(hashlib.sha256(data).hexdigest() == expected, f"Unexpected input checksum: {path}")
+    return data
+
+
+def load_font(path):
+    source = checked_bytes(path, FONT_SHA256).decode("utf-8")
+    font = {}
+    for match in re.finditer(r"^0x([0-9a-f]+):\n((?:    [.@]+\n)+)", source, re.MULTILINE):
+        character = chr(int(match[1], 16))
+        rows = match[2].split()
+        require(len(rows) == 9 and all(len(row) == 10 for row in rows), "Unexpected glyph geometry")
+        glyph = Image.new("1", (10, 9))
+        for y, row in enumerate(rows):
+            for x, pixel in enumerate(row):
+                glyph.putpixel((x, y), pixel == "@")
+        # The reference doubles scanlines, not the horizontal pixel dimension.
+        font[character] = glyph.resize((10, 18), Image.Resampling.NEAREST)
+    require(len(font) == 192, "Incomplete font source")
+    return font
+
+
+def text_mask(text, font):
+    mask = Image.new("1", (len(text) * 10, 18))
+    for index, character in enumerate(text):
+        require(character in font, f"Missing glyph: {character!r}")
+        mask.paste(font[character], (index * 10, 0))
+    return mask
+
+
+def measure_reference(path):
+    checked_bytes(path, REFERENCE_SHA256)
+    with Image.open(path) as source:
+        reference = source.convert("RGB")
+    colors = Counter(reference.get_flattened_data())
+    require(len(colors) == 2, "Reference must have exactly two colors")
+    background, foreground = [color for color, _count in colors.most_common()]
+    mask = reference.convert("L").point(lambda value: 255 if value != background[0] else 0, "1")
+    frame = mask.getbbox()
+    require(frame is not None, "No frame found")
+    left, top, right, bottom = frame
+
+    def horizontal_run(rows):
+        count = 0
+        for y in rows:
+            if all(mask.getpixel((x, y)) for x in range(left, right)):
+                count += 1
+            else:
+                break
+        return count
+
+    top_width = horizontal_run(range(top, bottom))
+    bottom_width = horizontal_run(range(bottom - 1, top - 1, -1))
+    # A blank scanline between the original text rows exposes both side borders.
+    blank_row = min(
+        range(top + top_width, bottom - bottom_width),
+        key=lambda y: sum(bool(mask.getpixel((x, y))) for x in range(left, right)),
+    )
+    left_width = 0
+    while mask.getpixel((left + left_width, blank_row)):
+        left_width += 1
+    right_width = 0
+    while mask.getpixel((right - right_width - 1, blank_row)):
+        right_width += 1
+    require(
+        (top_width, bottom_width, left_width, right_width) == (6, 6, 6, 6),
+        "Reference border measurements changed",
+    )
+    require(reference.size == (640, 400) and frame == (0, 0, 640, 78), "Unexpected reference geometry")
+    return reference, mask, background, foreground, frame, top_width
+
+
+def verify_font(reference_mask, font):
+    # Original chunks have their own coordinates; the first line's gap is 26px.
+    segments = (
+        ("Software Failure.", 38, 18),
+        ("Press left mouse button to continue.", 234, 18),
+        ("Guru Meditation #81000005.00000000", 142, 48),
+    )
+    for text, x, y in segments:
+        expected = text_mask(text, font)
+        actual = reference_mask.crop((x, y, x + expected.width, y + expected.height))
+        require(ImageChops.logical_xor(actual, expected).getbbox() is None, f"Font mismatch: {text}")
+    return len(set("".join(text for text, _x, _y in segments)))
+
+
+def render(reference, font, background, foreground, frame, border):
+    image = Image.new("RGB", reference.size, background)
+    left, top, right, bottom = frame
+    draw = ImageDraw.Draw(image)
+    draw.rectangle((left, top, right - 1, bottom - 1), fill=foreground)
+    draw.rectangle(
+        (left + border, top + border, right - border - 1, bottom - border - 1),
+        fill=background,
+    )
+    # Three 18px cells fit inside the unchanged 66px interior with 3px gaps/margins.
+    gap = 3
+    block_height = len(TEXT) * 18 + (len(TEXT) - 1) * gap
+    y = top + border + ((bottom - top - 2 * border) - block_height) // 2
+    placements = []
+    for text in TEXT:
+        mask = text_mask(text, font)
+        x = left + ((right - left) - mask.width) // 2
+        require(x >= left + border and x + mask.width <= right - border, "Text exceeds frame width")
+        require(y >= top + border and y + mask.height <= bottom - border, "Text exceeds frame height")
+        image.paste(foreground, (x, y), mask)
+        placements.append({"text": text, "x": x, "y": y, "cell_box": [mask.width, mask.height]})
+        y += mask.height + gap
+
+    # Compare every border pixel, including corners, with the original screenshot.
+    for y in range(reference.height):
+        for x in range(reference.width):
+            on_border = (
+                left <= x < right and top <= y < bottom
+                and (x < left + border or x >= right - border or y < top + border or y >= bottom - border)
+            )
+            if on_border:
+                require(image.getpixel((x, y)) == reference.getpixel((x, y)), "Border mismatch")
+            elif not (left + border <= x < right - border and top + border <= y < bottom - border):
+                require(image.getpixel((x, y)) == background, "Unexpected pixels outside frame")
+    require(set(image.get_flattened_data()) == {background, foreground}, "Unexpected output colors")
+    return image, placements
+
+
+def main():
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("--reference", type=Path, default=ROOT / ".local-tools/amiga-guru-reference.png")
+    parser.add_argument("--font", type=Path, default=ROOT / ".local-tools/topaz-ks13-09.yaff")
+    parser.add_argument("--output-dir", type=Path, default=ROOT / "artwork/guru-signal")
+    args = parser.parse_args()
+    font = load_font(args.font)
+    reference, mask, background, foreground, frame, border = measure_reference(args.reference)
+    matched_glyphs = verify_font(mask, font)
+    image, placements = render(reference, font, background, foreground, frame, border)
+    preview = image.resize((1280, 800), Image.Resampling.NEAREST)
+    require(preview.resize(image.size, Image.Resampling.NEAREST).tobytes() == image.tobytes(), "Scaling changed pixels")
+
+    # Validate everything before creating or replacing any deliverables.
+    args.output_dir.mkdir(parents=True, exist_ok=True)
+    image.save(args.output_dir / "guru-signal.png")
+    preview.save(args.output_dir / "guru-signal-2x.png")
+    metrics = {
+        "canvas": list(image.size), "frame_box_exclusive": list(frame),
+        "border_px": {side: border for side in ("top", "right", "bottom", "left")},
+        "foreground_rgb": list(foreground), "background_rgb": list(background),
+        "glyph_cell": [10, 18], "source_cell": [10, 9], "pixel_scale": [1, 2],
+        "reference_segments_matched": 3, "distinct_reference_glyphs_matched": matched_glyphs,
+        "reference_sha256": REFERENCE_SHA256, "font_sha256": FONT_SHA256,
+        "reference_source": "https://toastytech.com/guis/amiga1guru.png",
+        "font_source": FONT_SOURCE, "placements": placements,
+        "native_pixels_sha256": hashlib.sha256(image.tobytes()).hexdigest(),
+    }
+    (args.output_dir / "measurements.json").write_text(json.dumps(metrics, indent=2) + "\n")
+    print(f"Verified frame and {matched_glyphs} reference glyphs; wrote native and 2x PNGs to {args.output_dir}")
+
+
+if __name__ == "__main__":
+    try:
+        main()
+    except (OSError, ValueError) as error:
+        raise SystemExit(f"Banner rendering failed: {error}") from None
