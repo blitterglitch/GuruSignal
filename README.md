@@ -13,7 +13,8 @@ detail-page updates across browser tabs.
 Dependency compilation emits warnings documented in the setup and owner-access
 guides. The owner reports successful local verification of incident tracking.
 The public status page is implemented; 101 tests pass and the owner verified it
-in the browser. Deployment remains pending.
+in the browser. A temporary Fly trial deployment was subsequently verified;
+the owner confirmed removal of its trial resources afterward.
 The owner endpoint detail page is implemented; host checks passed with 90 tests.
 There is no live demo.
 
@@ -37,6 +38,10 @@ See [check-history retention](docs/retention.md) for the opt-in cleanup policy,
 preserved data, and verification status.
 See [production releases](docs/releases.md) for the prepared container,
 runtime settings, migration command, and owner-verified local smoke test.
+See the [Fly trial proposal](docs/fly-trial.md) and `fly.trial.toml` for the
+approved credit-only deployment; the owner deployed the app and verified its
+HTTPS health probes and browser workflows, including the Edit focus fix.
+The owner confirmed removal of the trial app and database after verification.
 
 GuruSignal is a single-owner learning and portfolio project. The intended MVP
 manages HTTP endpoints, checks them periodically, opens an incident after three
@@ -68,9 +73,9 @@ session behavior, and known limitations.
 - [x] Run the GitHub Actions workflow; the owner reports success with three upstream dependency deprecation warnings.
 - [x] Add opt-in batched check-history retention and verify its concurrency tests; 127 tests pass on the host.
 - [x] Add the production release/container; 130 tests pass and the owner verified both container health probes.
-- [ ] Finalize Fly deployment and recovery configuration after reviewing resources and cost.
+- [x] Complete an approved Fly trial deployment, verify HTTPS/browser workflows, and remove trial resources.
+- [ ] Finalize ongoing production and recovery configuration if paid hosting is later approved.
 - [ ] Add verified screenshots and local setup/test instructions.
-- [ ] Deploy to Fly.io after explicit approval of resources and cost; verify production.
 
 Notifications, content assertions, latency incidents, regional quorum, teams, and
 billing are outside the MVP.

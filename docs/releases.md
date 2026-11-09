@@ -6,7 +6,9 @@ Three production-configuration tests also passed in the coding sandbox, as did
 isolated checks for the local environment helper. Release source compiles without
 warnings, overlay scripts pass shell syntax checks, and `git diff --check` passes.
 Podman verification ran on the host because it cannot run in the coding sandbox.
-Production deployment and real database TLS verification remain pending.
+A temporary Fly trial deployment subsequently passed HTTPS health and browser
+checks, and the owner confirmed teardown; see the [trial record](fly-trial.md).
+An ongoing production deployment and independent database TLS inspection remain future work.
 
 ## Packaging
 
@@ -149,9 +151,10 @@ for restoration. Prefer additive migrations compatible with the previous release
 
 Before Fly deployment, review app name/region, one-machine/no-autostop scheduling,
 Managed Postgres connection details and verified TLS, secrets, backup/restore,
-image digests, proxy trust, health checks, owner HTTPS login, and cost. No `fly.toml`,
-registry push, Fly app, database service, or billable resource has been created.
-Those operations require the owner's explicit approval.
+image digests, proxy trust, health checks, owner HTTPS login, and cost. A separate
+[trial record](fly-trial.md) and `fly.trial.toml` document the owner-approved
+temporary deployment, verification, and completed teardown. Future deployments
+and billable resources require the owner's explicit approval.
 
 ## Sources
 

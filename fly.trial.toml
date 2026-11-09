@@ -1,0 +1,60 @@
+# Approved for a short credit-only trial in organization personal; no paid upgrade.
+# Owner validated this configuration; trial database provisioning has started.
+# Trial credit applies to the signup personal organization.
+# Change PHX_HOST if app name changes.
+app = "guru-signal"
+primary_region = "fra"
+kill_signal = "SIGTERM"
+kill_timeout = 30
+
+[build]
+  dockerfile = "Dockerfile"
+
+  [build.args]
+    BUILDER_IMAGE = "docker.io/library/elixir@sha256:610dfb3dd85f9e23af58b431f4907ebce66ae59fca9b462eed2e02d9f0baef89"
+    RUNNER_IMAGE = "docker.io/library/debian@sha256:7378260c0a098d27ac206225db5e7d92b8c7c84ea7afccc86eeb513756bbd392"
+
+[deploy]
+  release_command = "/app/bin/migrate"
+  release_command_timeout = "5m"
+  strategy = "rolling"
+  max_unavailable = 1
+
+  [deploy.release_command_vm]
+    size = "shared-cpu-1x"
+    memory = "1gb"
+
+[env]
+  PHX_HOST = "guru-signal.fly.dev"
+  PHX_BIND_IP = "::"
+  PORT = "8080"
+  POOL_SIZE = "5"
+  DATABASE_SSL = "true"
+  ECTO_IPV6 = "true"
+  RELEASE_DISTRIBUTION = "none"
+  MONITORING_ENABLED = "true"
+  RETENTION_ENABLED = "false"
+
+[http_service]
+  internal_port = 8080
+  force_https = true
+  auto_stop_machines = "off"
+  auto_start_machines = true
+  min_machines_running = 1
+
+  [[http_service.checks]]
+    grace_period = "20s"
+    interval = "15s"
+    timeout = "3s"
+    method = "GET"
+    path = "/health/ready"
+    protocol = "http"
+
+[[vm]]
+  cpu_kind = "shared"
+  cpus = 1
+  memory = "1gb"
+
+[[restart]]
+  policy = "on-failure"
+  retries = 3
