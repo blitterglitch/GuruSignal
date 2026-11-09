@@ -1,0 +1,43 @@
+#!/usr/bin/env python3
+"""Run Mix with ignored local database credentials and a persistent local key."""
+
+import os
+from pathlib import Path
+import secrets
+import sys
+
+root = Path(__file__).resolve().parent.parent
+env = os.environ.copy()
+if env.get("MIX_ENV", "dev") not in {"dev", "test"}:
+    sys.exit("mix-local supports development and test only.")
+
+credentials = root / ".env.postgres"
+if credentials.is_file():
+    for line in credentials.read_text().splitlines():
+        if not line or line.lstrip().startswith("#"):
+            continue
+        key, separator, value = line.partition("=")
+        if separator and key in {"POSTGRES_USER", "POSTGRES_PASSWORD", "POSTGRES_DB"}:
+            env.setdefault(key, value)
+
+if not env.get("POSTGRES_PASSWORD") or env["POSTGRES_PASSWORD"].startswith("replace-with-"):
+    sys.exit("Set POSTGRES_PASSWORD in .env.postgres or the environment first.")
+
+tools = root / ".local-tools"
+tools.mkdir(exist_ok=True, mode=0o700)
+key_path = tools / "secret_key_base"
+if "SECRET_KEY_BASE" not in env:
+    try:
+        descriptor = os.open(key_path, os.O_WRONLY | os.O_CREAT | os.O_EXCL, 0o600)
+    except FileExistsError:
+        pass
+    else:
+        with os.fdopen(descriptor, "w") as key_file:
+            key_file.write(secrets.token_urlsafe(64))
+    env["SECRET_KEY_BASE"] = key_path.read_text().strip()
+
+env.setdefault("MIX_HOME", str(tools / "mix"))
+env.setdefault("MIX_ARCHIVES", str(tools / "mix" / "archives"))
+env.setdefault("HEX_HOME", str(root / ".hex"))
+os.chdir(root)
+os.execvpe("mix", ["mix", *sys.argv[1:]], env)

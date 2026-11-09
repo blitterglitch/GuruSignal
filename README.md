@@ -2,8 +2,10 @@
 
 Real-time endpoint monitoring and incident tracking, built with Phoenix LiveView.
 
-**Status: design and local database tooling only.** The application has not yet
-been scaffolded, tested, or deployed. There is no live demo.
+**Status: Phoenix skeleton verified on the owner's host.** Database setup, asset
+builds, formatting, and compilation passed; all five generated tests passed.
+Dependency compilation emits warnings documented in the setup guide. Product
+features and deployment remain pending. There is no live demo.
 
 GuruSignal is a single-owner learning and portfolio project. The intended MVP
 manages HTTP endpoints, checks them periodically, opens an incident after three
@@ -18,7 +20,8 @@ See [the initial architecture](docs/architecture.md) and
 - [x] Inspect the available environment and consult official framework documentation.
 - [x] Record the proposed architecture, security controls, and local blockers.
 - [x] Prepare a PostgreSQL 17 Podman helper; owner verified `running healthy` on the host.
-- [ ] Generate Phoenix in this directory; resolve dependencies and verify compatibility.
+- [x] Generate Phoenix in this directory.
+- [x] Resolve dependencies and verify database setup, builds, and generated tests.
 - [ ] Add endpoint management and single-owner authentication.
 - [ ] Implement and test secure HTTP checks and persisted results.
 - [ ] Implement and test incident transitions and duplicate/stale result handling.
@@ -34,7 +37,8 @@ billing are outside the MVP.
 ## Agent-assisted development
 
 Codex has assisted with environment inspection, research, and the initial design.
-The planned workflow also uses Codex for scaffolding, implementation, and review.
+The owner ran Phoenix scaffolding on the host; Codex reviewed and adapted its
+local configuration. Implementation and review will continue with agent assistance.
 The project owner remains responsible for requirements, design decisions,
 validation, and the final result. This section will be updated to reflect work
 actually completed.
