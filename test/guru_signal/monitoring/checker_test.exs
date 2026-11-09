@@ -33,6 +33,12 @@ defmodule GuruSignal.Monitoring.CheckerTest do
         "/crash" ->
           raise "sensitive details must not escape"
 
+        "/throw" ->
+          throw("sensitive thrown details must not escape")
+
+        "/exit" ->
+          exit("sensitive exit details must not escape")
+
         "/hang" ->
           receive do
             :never -> {:ok, 200}
@@ -95,6 +101,22 @@ defmodule GuruSignal.Monitoring.CheckerTest do
   test "enforces policy before invoking a client", %{endpoint: endpoint, options: opts} do
     assert %{error_category: :blocked_destination} =
              Checker.check(endpoint, Keyword.put(opts, :resolver, PrivateResolver))
+  end
+
+  test "task throws and exits become safe outcomes without logging their payloads", %{
+    endpoint: endpoint,
+    options: opts
+  } do
+    logs =
+      ExUnit.CaptureLog.capture_log(fn ->
+        for path <- ["/throw", "/exit"] do
+          assert %{success: false, error_category: :internal} =
+                   Checker.check(%{endpoint | url: "https://service.example.org" <> path}, opts)
+        end
+      end)
+
+    refute logs =~ "sensitive"
+    assert Task.Supervisor.children(opts[:task_supervisor]) == []
   end
 
   test "the total deadline covers hanging DNS and HTTP and terminates their tasks", %{

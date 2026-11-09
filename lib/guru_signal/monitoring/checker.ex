@@ -17,6 +17,8 @@ defmodule GuruSignal.Monitoring.Checker do
           end
         rescue
           _error -> {:error, :internal}
+        catch
+          kind, _reason when kind in [:throw, :exit] -> {:error, :internal}
         end
       end)
 

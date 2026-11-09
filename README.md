@@ -27,6 +27,8 @@ See [endpoint details](docs/endpoint-details.md) for scoped history, live update
 and verification instructions.
 See [public status](docs/public-status.md) for the disclosure boundary, freshness
 rules, and verification instructions. Endpoint names are public service labels.
+See the [security and concurrency review](docs/security-review.md) for findings,
+regression coverage, and remaining deployment limits.
 
 GuruSignal is a single-owner learning and portfolio project. The intended MVP
 manages HTTP endpoints, checks them periodically, opens an incident after three
@@ -52,7 +54,8 @@ session behavior, and known limitations.
 - [x] Add the live owner dashboard with endpoint status, recent checks, and active incidents.
 - [x] Add endpoint detail pages; 90 tests pass and the owner verified updates across tabs.
 - [x] Add the public status page with restricted data and stale-result handling; 101 tests pass and the owner verified the browser workflow.
-- [ ] Review concurrency, SSRF, accessibility, logging, and Telemetry.
+- [x] Verify security/concurrency review fixes and additional race tests; 104 tests pass on the host.
+- [ ] Review accessibility and operational logging/Telemetry.
 - [ ] Add health checks, CI, release configuration, and operational documentation.
 - [ ] Add verified screenshots and local setup/test instructions.
 - [ ] Deploy to Fly.io after explicit approval of resources and cost; verify production.
