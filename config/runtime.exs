@@ -22,6 +22,13 @@ end
 
 config :guru_signal, :owner_password_hash, System.get_env("OWNER_PASSWORD_HASH")
 
+retention_days = String.to_integer(System.get_env("CHECK_RETENTION_DAYS", "30"))
+unless retention_days in 1..3_650, do: raise("CHECK_RETENTION_DAYS must be 1..3650")
+
+config :guru_signal,
+  check_retention_days: retention_days,
+  retention_enabled: config_env() != :test and System.get_env("RETENTION_ENABLED") == "true"
+
 config :guru_signal,
        :monitoring_enabled,
        (config_env() == :dev and System.get_env("MONITORING_ENABLED", "true") == "true") or

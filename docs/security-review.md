@@ -78,8 +78,9 @@ the destination or rejection category. Remove the fixture afterward.
 - Public visitors currently have no connection/rate limit. Each connected view
   reloads on broadcasts and every 30 seconds. Review capacity and edge limits
   before exposure; the global login limit also permits temporary owner lockout.
-- Results have no retention cleanup yet. Service count and active-incident lists
-  are not capped. Bound storage growth before production.
+- [Opt-in result retention](retention.md) is implemented with 127 passing host
+  tests. Incident history, service count, and active-incident lists remain
+  uncapped; storage/capacity planning is still needed before production.
 - Production enables HTTPS enforcement and Secure cookies, but proxy/header
   trust, database TLS, secrets, release configuration, and health checks need
   validation against the actual deployment topology. Dev diagnostic routes are

@@ -4,7 +4,7 @@ defmodule GuruSignal.Monitoring.ClaimConcurrencyTest do
   import GuruSignal.MonitoringFixtures
   alias Ecto.Adapters.SQL.Sandbox
   alias GuruSignal.Monitoring
-  alias GuruSignal.Monitoring.{Checks, Incident}
+  alias GuruSignal.Monitoring.{Checks, Incident, Retention}
   alias GuruSignal.Repo
 
   test "separate database connections cannot claim the same endpoint concurrently" do
@@ -150,6 +150,97 @@ defmodule GuruSignal.Monitoring.ClaimConcurrencyTest do
             # Editing acquired the lock first; the old configuration cannot open one.
             assert GuruSignal.Monitoring.Incidents.recent_for(endpoint.id) == []
         end
+      after
+        Repo.delete_all(from_endpoint(endpoint.id))
+      end
+    end)
+  end
+
+  test "cleanup skips an endpoint locked by another connection and retries later" do
+    with_retention_fixture(fn endpoint, now ->
+      Repo.transaction(fn ->
+        import Ecto.Query
+
+        Repo.one!(
+          from row in GuruSignal.Monitoring.Endpoint,
+            where: row.id == ^endpoint.id,
+            lock: "FOR UPDATE"
+        )
+
+        task =
+          Task.async(fn -> Sandbox.unboxed_run(Repo, fn -> Retention.prune(now: now) end) end)
+
+        assert {:ok, %{deleted_count: 0}} = Task.await(task, 2000)
+      end)
+
+      assert {:ok, %{deleted_count: 2}} = Retention.prune(now: now)
+    end)
+  end
+
+  test "simultaneous cleanup batches cannot delete current state or double-count rows" do
+    with_retention_fixture(fn endpoint, now ->
+      outcomes = concurrently(fn -> Retention.prune(now: now, batch_size: 1) end)
+
+      deleted =
+        Enum.reduce(outcomes, 0, fn {:ok, result}, count -> count + result.deleted_count end)
+
+      assert deleted in 1..2
+      assert length(Checks.recent_for(endpoint.id)) == 3 - deleted
+      assert {:ok, %{deleted_count: remaining}} = Retention.prune(now: now)
+      assert remaining == 2 - deleted
+      assert [latest] = Checks.recent_for(endpoint.id)
+      assert latest.sequence == 3
+    end)
+  end
+
+  test "cleanup racing completion preserves the newly accepted result" do
+    with_retention_fixture(
+      fn endpoint, now ->
+        {:ok, {_snapshot, pending}} = Checks.claim(endpoint.id, now: now)
+        outcome = %{success: true, http_status: 200, duration_ms: 10, error_category: nil}
+
+        [cleanup, completion] =
+          concurrently([
+            fn -> Retention.prune(now: now) end,
+            fn -> Checks.complete(pending.id, outcome, now: now) end
+          ])
+
+        assert {:ok, %{deleted_count: deleted}} = cleanup
+        # Zero when completion holds the lock; two when cleanup runs first;
+        # three when cleanup runs after completion has advanced current state.
+        assert deleted in [0, 2, 3]
+        assert {:ok, {:recorded, run}} = completion
+        assert run.id == pending.id
+        assert Monitoring.get_endpoint(endpoint.id).last_check_sequence == run.sequence
+        assert hd(Checks.recent_for(endpoint.id)).id == run.id
+        assert length(Checks.recent_for(endpoint.id)) == 4 - deleted
+        assert {:ok, %{deleted_count: remaining}} = Retention.prune(now: now)
+        assert remaining == 3 - deleted
+        assert [run] == Checks.recent_for(endpoint.id)
+      end,
+      latest_old: true
+    )
+  end
+
+  defp with_retention_fixture(function, opts \\ []) do
+    Sandbox.unboxed_run(Repo, fn ->
+      endpoint = endpoint_fixture(%{name: "Retention concurrency fixture"})
+
+      on_exit(fn ->
+        Sandbox.unboxed_run(Repo, fn -> Repo.delete_all(from_endpoint(endpoint.id)) end)
+      end)
+
+      try do
+        old = ~U[2026-09-01 12:00:00.000000Z]
+        now = ~U[2026-11-09 12:00:00.000000Z]
+        completed_check_fixture(endpoint, true, at: old)
+        completed_check_fixture(endpoint, true, at: DateTime.add(old, 1, :second))
+
+        latest_time =
+          if Keyword.get(opts, :latest_old, false), do: DateTime.add(old, 2, :second), else: now
+
+        completed_check_fixture(endpoint, true, at: latest_time)
+        function.(endpoint, now)
       after
         Repo.delete_all(from_endpoint(endpoint.id))
       end

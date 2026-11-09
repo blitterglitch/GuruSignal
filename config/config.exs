@@ -63,6 +63,7 @@ config :logger, :default_formatter,
     :error_category,
     :success,
     :duration_ms,
+    :deleted_count,
     :http_status,
     :transition
   ]

@@ -20,6 +20,7 @@ defmodule GuruSignal.Application do
         id: GuruSignal.CheckWorkers
       ),
       GuruSignal.Monitoring.Scheduler,
+      GuruSignal.Monitoring.RetentionWorker,
       # Start a worker by calling: GuruSignal.Worker.start_link(arg)
       # {GuruSignal.Worker, arg},
       # Start to serve requests, typically the last entry

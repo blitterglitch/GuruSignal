@@ -22,6 +22,8 @@ defmodule GuruSignalWeb.StatusLive do
     {:noreply, refresh(socket)}
   end
 
+  def handle_info({:history_pruned, _id}, socket), do: {:noreply, socket}
+
   defp schedule_refresh, do: Process.send_after(self(), :refresh_status, 30_000)
   defp refresh(socket), do: assign(socket, PublicStatus.snapshot())
 

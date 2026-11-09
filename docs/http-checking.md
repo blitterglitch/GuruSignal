@@ -141,8 +141,9 @@ from two independent connections. The unboxed concurrency fixture uses only the
 test database and removes its committed row afterward. LiveView tests cover
 completion broadcasts and safe result display.
 
-History currently has no automatic retention cleanup. Add and verify batched
-retention before production deployment. Incident transitions are implemented;
+[Batched retention](retention.md) is implemented and disabled by default; the owner
+reported 127 passing host tests. Confirm its policy and performance before production deployment.
+Incident transitions are implemented;
 the owner reports successful local verification. Endpoint detail timelines are
 implemented with passing host tests and verified updates across tabs; see
 [endpoint details](endpoint-details.md).

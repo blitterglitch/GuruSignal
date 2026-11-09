@@ -127,6 +127,7 @@ defmodule GuruSignalWeb.AdminLive do
   @impl true
   def handle_info({:endpoint_changed, _id}, socket), do: {:noreply, refresh(socket)}
   def handle_info({:check_completed, _id}, socket), do: {:noreply, refresh(socket)}
+  def handle_info({:history_pruned, _id}, socket), do: {:noreply, refresh(socket)}
 
   defp refresh(socket) do
     endpoints = Monitoring.list_endpoints()

@@ -15,7 +15,8 @@ defmodule GuruSignalWeb.EndpointLive do
   def handle_params(%{"id" => id}, _uri, socket), do: {:noreply, refresh(socket, id)}
 
   @impl true
-  def handle_info({event, id}, socket) when event in [:endpoint_changed, :check_completed] do
+  def handle_info({event, id}, socket)
+      when event in [:endpoint_changed, :check_completed, :history_pruned] do
     if socket.assigns.endpoint && socket.assigns.endpoint.id == id do
       {:noreply, refresh(socket, id)}
     else

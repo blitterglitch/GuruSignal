@@ -254,4 +254,20 @@ defmodule GuruSignalWeb.AdminLiveTest do
       assert {:error, {:live_redirect, %{to: "/admin"}}} = live(conn, ~p"/admin/endpoints/#{id}")
     end
   end
+
+  test "pruning refreshes owner history without disrupting the public status page", %{conn: conn} do
+    endpoint = endpoint_fixture()
+    old = completed_check_fixture(endpoint, true, at: ~U[2026-09-01 12:00:00.000000Z])
+    latest = completed_check_fixture(endpoint, true)
+    {:ok, dashboard, _} = live(conn, ~p"/admin")
+    {:ok, detail, _} = live(conn, ~p"/admin/endpoints/#{endpoint.id}")
+    {:ok, public, _} = live(build_conn(), ~p"/")
+    assert has_element?(dashboard, "#check-#{old.id}")
+    assert has_element?(detail, "#check-#{old.id}")
+    assert {:ok, %{deleted_count: 1}} = GuruSignal.Monitoring.Retention.prune()
+    refute has_element?(dashboard, "#check-#{old.id}")
+    refute has_element?(detail, "#check-#{old.id}")
+    assert has_element?(detail, "#check-#{latest.id}")
+    assert has_element?(public, "#service-#{endpoint.id}", "Operational")
+  end
 end

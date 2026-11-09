@@ -21,6 +21,8 @@ defmodule GuruSignalWeb.Telemetry do
 
   def metrics do
     [
+      sum("guru_signal.retention.stop.deleted_count"),
+      summary("guru_signal.retention.stop.duration_ms", unit: :millisecond),
       counter("guru_signal.check.stop.count",
         tags: [:success, :error_category],
         description: "Accepted completed checks"

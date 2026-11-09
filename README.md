@@ -33,6 +33,8 @@ See [health checks and CI](docs/health-and-ci.md) for probe behavior, workflow
 configuration, and verification status.
 See [accessibility and operational visibility](docs/accessibility-and-observability.md)
 for the verified interaction improvements, monitoring metrics, and further accessibility checks.
+See [check-history retention](docs/retention.md) for the opt-in cleanup policy,
+preserved data, and verification status.
 
 GuruSignal is a single-owner learning and portfolio project. The intended MVP
 manages HTTP endpoints, checks them periodically, opens an incident after three
@@ -62,6 +64,7 @@ session behavior, and known limitations.
 - [x] Add accessibility improvements and operational metric/log updates; owner confirmed local verification.
 - [x] Add health endpoints; 110 tests pass and the owner verified both HTTP probes.
 - [x] Run the GitHub Actions workflow; the owner reports success with three upstream dependency deprecation warnings.
+- [x] Add opt-in batched check-history retention and verify its concurrency tests; 127 tests pass on the host.
 - [ ] Add release configuration and deployment/recovery documentation.
 - [ ] Add verified screenshots and local setup/test instructions.
 - [ ] Deploy to Fly.io after explicit approval of resources and cost; verify production.

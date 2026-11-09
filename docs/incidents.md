@@ -43,8 +43,8 @@ and permit at most one open incident per endpoint. A concurrency test uses two
 independent PostgreSQL connections to complete the third failure simultaneously.
 
 Incidents store endpoint identity, opening/resolution times, a safe opening
-category, and links to the triggering checks. Those links can become null if
-future retention removes check rows; the incident timestamps/category survive.
+category, and links to the triggering checks. Those links can become null when
+[retention](retention.md) removes check rows; the incident timestamps/category survive.
 Resolution must not precede opening. Timestamps depend on the host's UTC clock.
 
 The existing committed-check PubSub message refreshes active incidents, recovery
@@ -101,4 +101,4 @@ Endpoint detail timelines are implemented with passing host tests and verified
 updates across tabs; see
 [endpoint details](endpoint-details.md). [Public status](public-status.md) is
 implemented with 101 passing host tests and an owner-verified browser workflow.
-Retention and deployment remain later work.
+Retention is implemented with 127 passing host tests. Deployment remains later work.
