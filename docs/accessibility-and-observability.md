@@ -11,8 +11,10 @@ listed below; this is not a conformance certification.
 
 - A keyboard-visible **Skip to content** link targets the main landmark on the
   public status page, login, dashboard, and endpoint detail page.
-- **Edit** moves focus to the endpoint name input. The existing input remains
-  the focus target while LiveView updates its configuration values.
+- **Edit** first loads the endpoint's form, then a server-pushed event focuses
+  the name input after the DOM patch. Focusing before that patch preserves the
+  old focused value and can leave the selected name blank; this was found in
+  the deployed trial and corrected.
 - Visible inputs with errors expose `aria-invalid="true"` and reference their
   error container through `aria-describedby`. Existing help-text references are
   preserved. Valid inputs do not reference nonexistent error messages.

@@ -31,7 +31,8 @@ defmodule GuruSignalWeb.AdminLive do
         {:noreply,
          socket
          |> assign(:editing, endpoint)
-         |> assign(:form, to_form(Monitoring.change_endpoint(endpoint)))}
+         |> assign(:form, to_form(Monitoring.change_endpoint(endpoint)))
+         |> push_event("focus-endpoint-name", %{})}
     end
   end
 
@@ -335,9 +336,8 @@ defmodule GuruSignalWeb.AdminLive do
               <button
                 id={"edit-endpoint-#{endpoint.id}"}
                 type="button"
-                phx-click={
-                  JS.push("edit", value: %{id: endpoint.id}) |> JS.focus(to: "#endpoint_name")
-                }
+                phx-click="edit"
+                phx-value-id={endpoint.id}
                 aria-label={"Edit #{endpoint.name}"}
                 class="btn btn-sm"
               >Edit</button>

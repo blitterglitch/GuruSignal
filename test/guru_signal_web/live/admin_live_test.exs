@@ -76,6 +76,20 @@ defmodule GuruSignalWeb.AdminLiveTest do
     assert has_element?(view, "#empty-endpoints")
   end
 
+  test "editing loads the selected endpoint before requesting input focus", %{conn: conn} do
+    first = endpoint_fixture(%{name: "First service"})
+    second = endpoint_fixture(%{name: "Second service", url: "https://example.com/second"})
+    {:ok, view, _} = live(conn, ~p"/admin")
+
+    for endpoint <- [first, second, first] do
+      assert has_element?(view, "#edit-endpoint-#{endpoint.id}[phx-click=edit]")
+      view |> element("#edit-endpoint-#{endpoint.id}") |> render_click()
+      assert has_element?(view, "#endpoint_name[value='#{endpoint.name}']")
+      assert has_element?(view, "#endpoint_url[value='#{endpoint.url}']")
+      assert_push_event(view, "focus-endpoint-name", %{})
+    end
+  end
+
   test "invalid input stays in the form and is not persisted", %{conn: conn} do
     {:ok, view, _} = live(conn, ~p"/admin")
 
