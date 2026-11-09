@@ -1,0 +1,4 @@
+#!/bin/sh
+set -eu
+cd -P -- "$(dirname -- "$0")"
+PHX_SERVER=false exec ./guru_signal eval 'GuruSignal.Release.migrate()'

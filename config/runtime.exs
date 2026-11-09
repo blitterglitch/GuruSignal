@@ -16,7 +16,7 @@ import Config
 #
 # Alternatively, you can use `mix phx.gen.release` to generate a `bin/server`
 # script that automatically sets the env var above.
-if System.get_env("PHX_SERVER") do
+if System.get_env("PHX_SERVER") in ["true", "1"] do
   config :guru_signal, GuruSignalWeb.Endpoint, server: true
 end
 
@@ -71,10 +71,40 @@ if config_env() == :prod do
       For example: ecto://USER:PASS@HOST/DATABASE
       """
 
+  database_uri = URI.new(database_url)
+
+  unless match?(
+           {:ok, %URI{scheme: scheme, host: host, path: path}}
+           when scheme in ["ecto", "postgres", "postgresql"] and is_binary(host) and host != "" and
+                  is_binary(path) and path != "/",
+           database_uri
+         ),
+         do: raise("DATABASE_URL must contain a PostgreSQL host and database name")
+
+  {:ok, database_uri} = database_uri
+
+  unless Regex.match?(~r{\A/[^/]+\z}, database_uri.path),
+    do: raise("DATABASE_URL must contain one database path segment")
+
+  if Enum.any?(URI.query_decoder(database_uri.query || ""), fn {key, _} ->
+       String.downcase(key) in ["ssl", "sslmode"]
+     end),
+     do: raise("Configure database TLS using DATABASE_SSL, not DATABASE_URL query parameters")
+
+  ssl =
+    case System.get_env("DATABASE_SSL", "true") do
+      "true" -> true
+      "false" -> false
+      _ -> raise "DATABASE_SSL must be true or false"
+    end
+
+  ca_file = System.get_env("DATABASE_CA_CERT_FILE")
+  if ca_file && not ssl, do: raise("DATABASE_CA_CERT_FILE requires DATABASE_SSL=true")
+  ssl = if ca_file, do: [cacertfile: ca_file], else: ssl
   maybe_ipv6 = if System.get_env("ECTO_IPV6") in ~w(true 1), do: [:inet6], else: []
 
   config :guru_signal, GuruSignal.Repo,
-    # ssl: true,
+    ssl: ssl,
     url: database_url,
     pool_size: String.to_integer(System.get_env("POOL_SIZE") || "10"),
     # For machines with several cores, consider starting multiple pools of `pool_size`
@@ -91,7 +121,16 @@ if config_env() == :prod do
       You can generate one by calling: mix phx.gen.secret
       """
 
-  host = System.get_env("PHX_HOST") || "example.com"
+  if byte_size(secret_key_base) < 64, do: raise("SECRET_KEY_BASE must be at least 64 bytes")
+
+  host = System.get_env("PHX_HOST") || raise("PHX_HOST is required in production")
+  if host == "", do: raise("PHX_HOST must not be empty")
+
+  bind_ip =
+    case :inet.parse_address(String.to_charlist(System.get_env("PHX_BIND_IP", "::"))) do
+      {:ok, address} -> address
+      _ -> raise "PHX_BIND_IP must be an IPv4 or IPv6 address"
+    end
 
   config :guru_signal, :dns_cluster_query, System.get_env("DNS_CLUSTER_QUERY")
 
@@ -102,7 +141,7 @@ if config_env() == :prod do
       # Set it to  {0, 0, 0, 0, 0, 0, 0, 1} for local network only access.
       # See the documentation on https://bandit.hexdocs.pm/Bandit.html#t:options/0
       # for details about using IPv6 vs IPv4 and loopback vs public addresses.
-      ip: {0, 0, 0, 0, 0, 0, 0, 0}
+      ip: bind_ip
     ],
     secret_key_base: secret_key_base
 

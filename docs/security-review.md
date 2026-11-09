@@ -83,7 +83,11 @@ the destination or rejection category. Remove the fixture afterward.
   uncapped; storage/capacity planning is still needed before production.
 - Production enables HTTPS enforcement and Secure cookies, but proxy/header
   trust, database TLS, secrets, release configuration, and health checks need
-  validation against the actual deployment topology. Dev diagnostic routes are
+  validation against the actual deployment topology. A [release/container](releases.md)
+  is prepared with TLS enabled by default; 130 host tests and the local container
+  health probes pass. The local smoke database uses explicit plaintext, so real
+  production database TLS still needs verification.
+  Dev diagnostic routes are
   intended for local development.
 - [Health endpoints and CI](health-and-ci.md) are implemented; 110 host tests and
   both HTTP probes pass. The owner reported a successful remote workflow run

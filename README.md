@@ -35,6 +35,8 @@ See [accessibility and operational visibility](docs/accessibility-and-observabil
 for the verified interaction improvements, monitoring metrics, and further accessibility checks.
 See [check-history retention](docs/retention.md) for the opt-in cleanup policy,
 preserved data, and verification status.
+See [production releases](docs/releases.md) for the prepared container,
+runtime settings, migration command, and owner-verified local smoke test.
 
 GuruSignal is a single-owner learning and portfolio project. The intended MVP
 manages HTTP endpoints, checks them periodically, opens an incident after three
@@ -65,7 +67,8 @@ session behavior, and known limitations.
 - [x] Add health endpoints; 110 tests pass and the owner verified both HTTP probes.
 - [x] Run the GitHub Actions workflow; the owner reports success with three upstream dependency deprecation warnings.
 - [x] Add opt-in batched check-history retention and verify its concurrency tests; 127 tests pass on the host.
-- [ ] Add release configuration and deployment/recovery documentation.
+- [x] Add the production release/container; 130 tests pass and the owner verified both container health probes.
+- [ ] Finalize Fly deployment and recovery configuration after reviewing resources and cost.
 - [ ] Add verified screenshots and local setup/test instructions.
 - [ ] Deploy to Fly.io after explicit approval of resources and cost; verify production.
 

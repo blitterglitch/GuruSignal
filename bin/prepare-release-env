@@ -1,0 +1,43 @@
+#!/usr/bin/env python3
+"""Prepare ignored settings for local container probes; does not create a database or run cleanup."""
+import os
+from pathlib import Path
+import secrets
+import sys
+from urllib.parse import quote
+
+root = Path(__file__).resolve().parent.parent
+credentials = root / ".env.postgres"
+if not credentials.is_file():
+    sys.exit("Create .env.postgres first, as for local development.")
+settings = {}
+for line in credentials.read_text().splitlines():
+    if not line or line.lstrip().startswith("#"):
+        continue
+    key, separator, value = line.partition("=")
+    if separator and key in {"POSTGRES_USER", "POSTGRES_PASSWORD"}:
+        settings[key] = value
+password = settings.get("POSTGRES_PASSWORD", "")
+if not password or password.startswith("replace-with-"):
+    sys.exit("Set a local PostgreSQL password first.")
+user = quote(settings.get("POSTGRES_USER", "postgres"), safe="")
+url_password = quote(password, safe="")
+values = {
+    "DATABASE_URL": f"ecto://{user}:{url_password}@127.0.0.1:5432/guru_signal_release_smoke",
+    "DATABASE_SSL": "false",
+    "SECRET_KEY_BASE": secrets.token_urlsafe(64),
+    "PHX_HOST": "localhost",
+    "PHX_BIND_IP": "127.0.0.1",
+    "PORT": "8080",
+    "POOL_SIZE": "2",
+    "MONITORING_ENABLED": "false",
+    "RETENTION_ENABLED": "false",
+}
+path = root / ".env.release.local"
+try:
+    descriptor = os.open(path, os.O_WRONLY | os.O_CREAT | os.O_EXCL, 0o600)
+except FileExistsError:
+    sys.exit(".env.release.local already exists; keep it to reuse this smoke-test configuration.")
+with os.fdopen(descriptor, "w") as output:
+    output.write("".join(f"{key}={value}\n" for key, value in values.items()))
+print("Created .env.release.local for loopback-only container probes using a separate smoke-test database.")
