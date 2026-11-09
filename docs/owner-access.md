@@ -38,7 +38,8 @@ The test suite uses its own cheap password hashes solely for test fixtures.
 
 Visit <http://localhost:4000/login>. After login, `/admin` shows a protected
 LiveView placeholder. Sign out, then verify that `/admin` redirects to `/login`.
-The public home route still shows the generated welcome page.
+The public home route shows a read-only [status page](public-status.md).
+Endpoint names are public labels; URLs and diagnostic details remain owner-only.
 
 ## Session behavior and limits
 

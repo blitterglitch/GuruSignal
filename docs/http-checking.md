@@ -146,7 +146,9 @@ retention before production deployment. Incident transitions are implemented;
 the owner reports successful local verification. Endpoint detail timelines are
 implemented with passing host tests and verified updates across tabs; see
 [endpoint details](endpoint-details.md).
-Public status projection, deployment, and CI remain later milestones.
+The [public status projection](public-status.md) is implemented with 101 passing
+host tests and an owner-verified browser workflow. Deployment and CI remain
+later milestones.
 
 References consulted on 2026-11-09:
 

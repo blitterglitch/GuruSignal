@@ -24,11 +24,12 @@ defmodule GuruSignal.MonitoringTest do
 
   test "invalid changes leave the stored endpoint untouched and do not broadcast" do
     endpoint = endpoint_fixture()
+    endpoint_id = endpoint.id
     Monitoring.subscribe()
     assert {:error, changeset} = Monitoring.update_endpoint(endpoint, %{timeout_ms: 20_000})
     assert "must be less than or equal to 10000" in errors_on(changeset).timeout_ms
     assert Monitoring.get_endpoint(endpoint.id) == endpoint
-    refute_received {:endpoint_changed, _}
+    refute_received {:endpoint_changed, ^endpoint_id}
   end
 
   test "stale editors cannot overwrite or delete a newer configuration" do

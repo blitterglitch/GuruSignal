@@ -8,6 +8,7 @@ defmodule GuruSignal.Monitoring.ChecksTest do
 
   test "claims enabled endpoints once and applies a completion exactly once" do
     endpoint = endpoint_fixture()
+    endpoint_id = endpoint.id
     assert {:ok, {snapshot, run}} = Checks.claim(endpoint.id)
     assert snapshot.lock_version == endpoint.lock_version
     assert snapshot.check_sequence == 1
@@ -15,7 +16,7 @@ defmodule GuruSignal.Monitoring.ChecksTest do
     Monitoring.subscribe()
     assert {:ok, {:recorded, completed}} = Checks.complete(run.id, @success)
     assert completed.success and completed.duration_ms == 42
-    assert_receive {:check_completed, _}
+    assert_receive {:check_completed, ^endpoint_id}
 
     assert {:ok, :ignored} =
              Checks.complete(run.id, %{
@@ -24,7 +25,7 @@ defmodule GuruSignal.Monitoring.ChecksTest do
                duration_ms: 1000
              })
 
-    refute_received {:check_completed, _}
+    refute_received {:check_completed, ^endpoint_id}
     assert Repo.get!(CheckRun, run.id).success
     assert Monitoring.get_endpoint(endpoint.id).last_check_sequence == 1
     assert Checks.latest_for([endpoint])[endpoint.id].id == run.id

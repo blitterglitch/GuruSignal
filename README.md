@@ -12,7 +12,8 @@ verification of blocked destinations remains pending. The owner verified live
 detail-page updates across browser tabs.
 Dependency compilation emits warnings documented in the setup and owner-access
 guides. The owner reports successful local verification of incident tracking.
-The public status page and deployment remain pending.
+The public status page is implemented; 101 tests pass and the owner verified it
+in the browser. Deployment remains pending.
 The owner endpoint detail page is implemented; host checks passed with 90 tests.
 There is no live demo.
 
@@ -24,11 +25,13 @@ See [incident transitions](docs/incidents.md) for the three-failure/two-success
 rules, concurrency guarantees, and the current milestone's verification steps.
 See [endpoint details](docs/endpoint-details.md) for scoped history, live updates,
 and verification instructions.
+See [public status](docs/public-status.md) for the disclosure boundary, freshness
+rules, and verification instructions. Endpoint names are public service labels.
 
 GuruSignal is a single-owner learning and portfolio project. The intended MVP
 manages HTTP endpoints, checks them periodically, opens an incident after three
 consecutive failures, and resolves it after two consecutive successes. A protected
-LiveView dashboard and a public status page will expose different levels of detail.
+LiveView dashboard and a public status page expose different levels of detail.
 
 See [the initial architecture](docs/architecture.md) and
 [environment findings and setup](docs/setup.md).
@@ -48,7 +51,7 @@ session behavior, and known limitations.
 - [x] Implement and test incident transitions and duplicate/stale result handling; owner verified locally.
 - [x] Add the live owner dashboard with endpoint status, recent checks, and active incidents.
 - [x] Add endpoint detail pages; 90 tests pass and the owner verified updates across tabs.
-- [ ] Add the public status page.
+- [x] Add the public status page with restricted data and stale-result handling; 101 tests pass and the owner verified the browser workflow.
 - [ ] Review concurrency, SSRF, accessibility, logging, and Telemetry.
 - [ ] Add health checks, CI, release configuration, and operational documentation.
 - [ ] Add verified screenshots and local setup/test instructions.

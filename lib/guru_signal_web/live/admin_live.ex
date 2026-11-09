@@ -171,6 +171,7 @@ defmodule GuruSignalWeb.AdminLive do
         <div>
           <h1 class="text-2xl font-semibold">GuruSignal administration</h1>
           <p class="mt-2">Configure your monitored endpoints.</p>
+          <.link href={~p"/"} class="mt-2 inline-block underline">Public status page</.link>
         </div>
         <.link href={~p"/logout"} method="delete" class="underline">Sign out</.link>
       </header>
@@ -252,6 +253,7 @@ defmodule GuruSignalWeb.AdminLive do
           </div>
           <.input field={@form[:enabled]} type="checkbox" label="Enabled" />
           <p class="mb-4 text-sm">
+            Endpoint names are displayed publicly on the status page. Use public service labels.
             HTTP port 80 or HTTPS port 443 only. No URL credentials or fragments.
           </p>
           <div class="flex gap-3">

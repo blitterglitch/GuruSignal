@@ -21,7 +21,10 @@ defmodule GuruSignalWeb.Router do
   scope "/", GuruSignalWeb do
     pipe_through(:browser)
 
-    get("/", PageController, :home)
+    live_session :public do
+      live("/", StatusLive)
+    end
+
     get("/login", SessionController, :new)
     post("/login", SessionController, :create)
     delete("/logout", SessionController, :delete)

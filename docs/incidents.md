@@ -99,5 +99,6 @@ The migration adds one table and two endpoint counters. Rolling it back deletes
 incident history and counters; it does not delete existing endpoint/check rows.
 Endpoint detail timelines are implemented with passing host tests and verified
 updates across tabs; see
-[endpoint details](endpoint-details.md). Public status presentation, retention,
-and deployment remain later work.
+[endpoint details](endpoint-details.md). [Public status](public-status.md) is
+implemented with 101 passing host tests and an owner-verified browser workflow.
+Retention and deployment remain later work.
