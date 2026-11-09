@@ -12,6 +12,7 @@ defmodule GuruSignal.Application do
       GuruSignal.Repo,
       {DNSCluster, query: Application.get_env(:guru_signal, :dns_cluster_query) || :ignore},
       {Phoenix.PubSub, name: GuruSignal.PubSub},
+      GuruSignal.OwnerAccess,
       # Start a worker by calling: GuruSignal.Worker.start_link(arg)
       # {GuruSignal.Worker, arg},
       # Start to serve requests, typically the last entry

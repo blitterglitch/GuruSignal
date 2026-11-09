@@ -7,6 +7,9 @@
 # General application configuration
 import Config
 
+config :pbkdf2_elixir, rounds: 600_000
+config :phoenix, :filter_parameters, ["password", "secret", "token"]
+
 config :guru_signal,
   ecto_repos: [GuruSignal.Repo],
   generators: [timestamp_type: :utc_datetime]

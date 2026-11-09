@@ -141,7 +141,10 @@ results. The owner supplied successful output for dependency resolution, databas
 creation, migrations (none pending), asset installation/build, formatting, and
 `compile --warnings-as-errors`. ExUnit reported **5 passed** for the generated
 skeleton. These tests do not validate monitoring features, which are not built yet.
-Browser startup verification is still pending. Commit the generated `mix.lock`.
+The owner also confirmed that the Phoenix welcome page loads in the browser.
+The skeleton and its generated `mix.lock` have been committed.
+See [owner access](owner-access.md) for the next milestone's new dependency,
+credential setup, and pending verification.
 
 ### Dependency warnings observed
 

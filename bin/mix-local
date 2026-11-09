@@ -23,6 +23,10 @@ if credentials.is_file():
 if not env.get("POSTGRES_PASSWORD") or env["POSTGRES_PASSWORD"].startswith("replace-with-"):
     sys.exit("Set POSTGRES_PASSWORD in .env.postgres or the environment first.")
 
+owner_hash = root / ".local-tools" / "owner_password_hash"
+if owner_hash.is_file():
+    env.setdefault("OWNER_PASSWORD_HASH", owner_hash.read_text().strip())
+
 tools = root / ".local-tools"
 tools.mkdir(exist_ok=True, mode=0o700)
 key_path = tools / "secret_key_base"

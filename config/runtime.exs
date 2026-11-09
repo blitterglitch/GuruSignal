@@ -20,6 +20,8 @@ if System.get_env("PHX_SERVER") do
   config :guru_signal, GuruSignalWeb.Endpoint, server: true
 end
 
+config :guru_signal, :owner_password_hash, System.get_env("OWNER_PASSWORD_HASH")
+
 config :guru_signal, GuruSignalWeb.Endpoint,
   http: [port: String.to_integer(System.get_env("PORT", "4000"))]
 
