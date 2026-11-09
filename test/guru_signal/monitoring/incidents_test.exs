@@ -213,6 +213,22 @@ defmodule GuruSignal.Monitoring.IncidentsTest do
     assert Checks.recent() == []
   end
 
+  test "endpoint incident history is scoped, newest first, and bounded" do
+    endpoint = endpoint_fixture()
+    other = endpoint_fixture()
+    for step <- 1..3, do: check(endpoint, false, step)
+    [first] = Incidents.recent_for(endpoint.id)
+    check(endpoint, true, 4)
+    check(endpoint, true, 5)
+    for step <- 6..8, do: check(endpoint, false, step)
+    for step <- 1..3, do: check(other, false, step)
+    [second, resolved] = Incidents.recent_for(endpoint.id)
+    assert resolved.id == first.id
+    assert resolved.resolved_at
+    assert second.resolved_at == nil
+    assert [second] == Incidents.recent_for(endpoint.id, 1)
+  end
+
   def observe(_event, _measurements, metadata, {pid, endpoint_id}) do
     if metadata.endpoint_id == endpoint_id do
       send(pid, {:incident_transition, metadata.transition, metadata.incident_id})

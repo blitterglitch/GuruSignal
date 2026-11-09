@@ -41,7 +41,7 @@ headers. This is a status-only GET check, not full-body download timing. A 3xx
 response succeeds only if that code is explicitly expected; it is never followed.
 An endpoint's first failing check is shown as failing. The subsequent
 [incident milestone](incidents.md) adds three-failure/two-success thresholds;
-its implementation is awaiting host verification.
+the owner verified its implementation locally.
 
 ## SSRF controls
 
@@ -143,8 +143,10 @@ completion broadcasts and safe result display.
 
 History currently has no automatic retention cleanup. Add and verify batched
 retention before production deployment. Incident transitions are implemented;
-the owner reports successful local verification. Endpoint detail timelines, public
-status projection, deployment, and CI remain later milestones.
+the owner reports successful local verification. Endpoint detail timelines are
+implemented with passing host tests and verified updates across tabs; see
+[endpoint details](endpoint-details.md).
+Public status projection, deployment, and CI remain later milestones.
 
 References consulted on 2026-11-09:
 

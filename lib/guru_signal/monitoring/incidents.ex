@@ -61,6 +61,15 @@ defmodule GuruSignal.Monitoring.Incidents do
     end
   end
 
+  def recent_for(endpoint_id, limit \\ 20) do
+    Repo.all(
+      from incident in Incident,
+        where: incident.endpoint_id == ^endpoint_id,
+        order_by: [desc: incident.opened_at, desc: incident.id],
+        limit: ^limit
+    )
+  end
+
   # Called only after the transaction containing check, counters, and incident commits.
   def notify_transition(nil), do: :ok
 

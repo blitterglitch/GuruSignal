@@ -97,5 +97,7 @@ tests use simulated outcomes and require no public Internet. Restart without
 
 The migration adds one table and two endpoint counters. Rolling it back deletes
 incident history and counters; it does not delete existing endpoint/check rows.
-Public status presentation, endpoint detail timelines, retention, and deployment
-remain later work.
+Endpoint detail timelines are implemented with passing host tests and verified
+updates across tabs; see
+[endpoint details](endpoint-details.md). Public status presentation, retention,
+and deployment remain later work.

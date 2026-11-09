@@ -145,6 +145,15 @@ defmodule GuruSignal.Monitoring.Checks do
     )
   end
 
+  def recent_for(endpoint_id, limit \\ 50) do
+    Repo.all(
+      from run in CheckRun,
+        where: run.endpoint_id == ^endpoint_id and run.state == :completed,
+        order_by: [desc: run.sequence],
+        limit: ^limit
+    )
+  end
+
   defp discard(run, now) do
     run |> Ecto.Changeset.change(state: :discarded, completed_at: now) |> Repo.update!()
   end

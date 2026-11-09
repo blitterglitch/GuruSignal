@@ -32,6 +32,7 @@ defmodule GuruSignalWeb.Router do
 
     live_session :owner, on_mount: [{GuruSignalWeb.OwnerAuth, :require_owner}] do
       live("/", AdminLive)
+      live("/endpoints/:id", EndpointLive)
     end
   end
 

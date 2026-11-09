@@ -89,4 +89,17 @@ defmodule GuruSignal.Monitoring.ChecksTest do
       )
     end
   end
+
+  test "endpoint history contains only its completed results in sequence order with a limit" do
+    endpoint = endpoint_fixture()
+    other = endpoint_fixture()
+    base = ~U[2026-11-09 12:00:00.000000Z]
+    first = completed_check_fixture(endpoint, true, at: base)
+    second = completed_check_fixture(endpoint, false, at: DateTime.add(base, 1, :second))
+    third = completed_check_fixture(endpoint, true, at: DateTime.add(base, 2, :second))
+    completed_check_fixture(other, false, at: base)
+    {:ok, {_snapshot, _pending}} = Checks.claim(endpoint.id, now: DateTime.add(base, 3, :second))
+    assert Enum.map(Checks.recent_for(endpoint.id), & &1.id) == [third.id, second.id, first.id]
+    assert Enum.map(Checks.recent_for(endpoint.id, 2), & &1.id) == [third.id, second.id]
+  end
 end

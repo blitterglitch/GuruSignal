@@ -176,4 +176,74 @@ defmodule GuruSignalWeb.AdminLiveTest do
     refute has_element?(view, "#active-incident-#{incident.id}")
     assert has_element?(view, "#incident-history-#{incident.id}", "2026-11-09T12:00:04.001000Z")
   end
+
+  test "dashboard links to a protected endpoint detail page", %{conn: conn} do
+    endpoint = endpoint_fixture()
+    {:ok, dashboard, _} = live(conn, ~p"/admin")
+    assert has_element?(dashboard, "a[href='/admin/endpoints/#{endpoint.id}']", endpoint.name)
+    {:ok, detail, _} = live(conn, ~p"/admin/endpoints/#{endpoint.id}")
+    assert has_element?(detail, "#endpoint-heading", endpoint.name)
+    assert has_element?(detail, "#empty-check-history")
+    assert has_element?(detail, "#empty-incident-timeline")
+    assert has_element?(detail, "#endpoint-status", "Awaiting check")
+    assert redirected_to(get(build_conn(), ~p"/admin/endpoints/#{endpoint.id}")) == ~p"/login"
+  end
+
+  test "detail history stays scoped to its endpoint and updates through recovery", %{conn: conn} do
+    endpoint = endpoint_fixture(%{name: "Visible service"})
+    other = endpoint_fixture(%{name: "Other service", url: "https://other.example.com"})
+    base = ~U[2026-11-09 12:00:00.000000Z]
+
+    for step <- 0..2,
+        do: completed_check_fixture(other, false, at: DateTime.add(base, step, :second))
+
+    {:ok, view, _} = live(conn, ~p"/admin/endpoints/#{endpoint.id}")
+
+    for step <- 0..2,
+        do: completed_check_fixture(endpoint, false, at: DateTime.add(base, step, :second))
+
+    assert has_element?(view, "#endpoint-status", "Incident open")
+    [incident] = Incidents.recent_for(endpoint.id)
+    assert has_element?(view, "#incident-#{incident.id}", "Open")
+    refute render(view) =~ "Other service"
+    for run <- Checks.recent_for(other.id), do: refute(has_element?(view, "#check-#{run.id}"))
+
+    completed_check_fixture(endpoint, true, at: DateTime.add(base, 3, :second))
+    assert has_element?(view, "#endpoint-status", "Recovering (1/2 successes)")
+    completed_check_fixture(endpoint, true, at: DateTime.add(base, 4, :second))
+    assert has_element?(view, "#endpoint-status", "Healthy")
+    assert has_element?(view, "#incident-#{incident.id}", "Resolved")
+    assert has_element?(view, "#incident-#{incident.id}", "2026-11-09T12:00:04.001000Z")
+  end
+
+  test "detail preserves old results without presenting them as current after an edit", %{
+    conn: conn
+  } do
+    endpoint = endpoint_fixture()
+    run = completed_check_fixture(endpoint, true)
+    {:ok, view, _} = live(conn, ~p"/admin/endpoints/#{endpoint.id}")
+    assert has_element?(view, "#latest-check", "200")
+
+    {:ok, _} =
+      Monitoring.update_endpoint(endpoint, %{name: "Renamed endpoint", expected_status: 204})
+
+    assert has_element?(view, "#endpoint-heading", "Renamed endpoint")
+    assert has_element?(view, "#endpoint-status", "Awaiting check")
+    refute has_element?(view, "#latest-check")
+    assert has_element?(view, "#check-#{run.id}", "v1 (previous)")
+    assert has_element?(view, "#check-#{run.id}", "200")
+  end
+
+  test "detail redirects when its endpoint is deleted", %{conn: conn} do
+    endpoint = endpoint_fixture()
+    {:ok, view, _} = live(conn, ~p"/admin/endpoints/#{endpoint.id}")
+    {:ok, _} = Monitoring.delete_endpoint(endpoint)
+    assert_redirect(view, ~p"/admin")
+  end
+
+  test "missing and invalid detail identifiers return to the dashboard", %{conn: conn} do
+    for id <- ["0", "not-an-id", "999999999999999999999999999999999999"] do
+      assert {:error, {:live_redirect, %{to: "/admin"}}} = live(conn, ~p"/admin/endpoints/#{id}")
+    end
+  end
 end
